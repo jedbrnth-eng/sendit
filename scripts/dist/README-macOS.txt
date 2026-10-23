@@ -15,4 +15,4 @@ Controls: W/S throttle and brake, A/D steer, C camera, R restart,
 
 Needs macOS 12 or later (Apple Silicon or Intel).
 Project page: https://github.com/jedbrnth-eng/sendit
-Licence: MIT (see LICENSE). Third-party credits: CREDITS.md
+Licence: GPL-3.0 (see LICENSE). Third-party credits: CREDITS.md

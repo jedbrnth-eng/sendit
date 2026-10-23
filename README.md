@@ -15,7 +15,7 @@
   <a href="https://github.com/jedbrnth-eng/sendit/releases"><img src="https://img.shields.io/github/downloads/jedbrnth-eng/sendit/total?label=downloads&color=ff2d95" alt="Total downloads"></a>
   <img src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-supported-555555" alt="macOS, Windows and Linux">
   <img src="https://img.shields.io/badge/Godot-4.7-478CBF?logo=godotengine&logoColor=white" alt="Godot 4.7">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0 license"></a>
 </p>
 
 <p align="center">
@@ -206,7 +206,7 @@ In Godot's per-user data folder as `best.cfg`: `~/Library/Application Support/Go
 Yes. See [Controls](#controls).
 
 **Can I mod it or use the assets?**
-The code is MIT. Each asset keeps its own licence, listed in [CREDITS.md](CREDITS.md) (mostly CC0). The hero car needs attribution (CC BY 4.0).
+The code is GPL-3.0. Each asset keeps its own licence, listed in [CREDITS.md](CREDITS.md) (mostly CC0). The hero car needs attribution (CC BY 4.0).
 
 **Is there multiplayer, a car selector, or more tracks?**
 Not yet. 0.1 is one track, one car and a three-minute score attack. Ideas are welcome as [feature requests](https://github.com/jedbrnth-eng/sendit/issues/new/choose).
@@ -233,4 +233,6 @@ Cars, city kit, textures, HDRIs, sounds and fonts come from CC0 and openly licen
 
 ## License
 
-[MIT](LICENSE) © 2026 Jed Brown. Third-party work keeps its own licence, listed in [`CREDITS.md`](CREDITS.md).
+SendIt is free software under the [GNU GPL v3.0](LICENSE), © 2026 Jed Brown. You can use it, study it, change it and share it. If you pass it on, modified or not, you must keep the copyright and credit to Jed Brown, release your full source under GPL-3.0 too, and say what you changed. Cars, sounds, fonts and other third-party assets keep their own licenses, listed in [`CREDITS.md`](CREDITS.md).
+
+Want to improve it? Please send your changes here as a pull request instead of making a separate copy ([CONTRIBUTING.md](CONTRIBUTING.md)). The SendIt name and icon are not covered by the license, so a fork needs its own.

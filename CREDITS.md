@@ -1,6 +1,6 @@
 # Credits and licences
 
-SendIt itself is MIT-licensed (see [LICENSE](LICENSE)). Code: SendIt original. Driving-feel ideas informed by KenneyNL/Starter-Kit-Racing (MIT) and godot-demo-projects truck_town (MIT); no code copied verbatim.
+SendIt itself is GPL-3.0-licensed (see [LICENSE](LICENSE)). Code: SendIt original. Driving-feel ideas informed by KenneyNL/Starter-Kit-Racing (MIT) and godot-demo-projects truck_town (MIT); no code copied verbatim.
 
 | Asset | Path | Licence | Source |
 |---|---|---|---|
@@ -26,4 +26,4 @@ SendIt itself is MIT-licensed (see [LICENSE](LICENSE)). Code: SendIt original. D
 | BigSoundBank glass burst (Joseph Sardin) | assets/sfx/glass-burst-s0148.ogg | CC0 | https://bigsoundbank.com/glass-burst-s0148.html |
 | Kenney Interface Sounds (confirmation_002), Impact Sounds (impactPunch_heavy_000) | assets/sfx | CC0 | https://kenney.nl/assets/interface-sounds |
 | Russo One, Chakra Petch fonts | assets/fonts | SIL OFL 1.1 | https://github.com/google/fonts |
-| SendIt app icon (original artwork, rendered by tools/make_icon.py from the fonts above) | assets/icon | MIT | This repository |
+| SendIt app icon (original artwork, rendered by tools/make_icon.py from the fonts above) | assets/icon | GPL-3.0 | This repository |

@@ -39,7 +39,12 @@ tests/             unit tests     tools/   capture, gate, probes, asset scripts
 Scenes are built in code so changes show up in diffs. Use the constants in `road_spec.gd` instead of hard-coding lane positions.
 
 ## Assets and licences
-Only **CC0**, **CC-BY 4.0** (with credit), **SIL OFL** fonts and **MIT** code are accepted: no NC/ND licences, no ripped game assets, and no real car brands, logos or model names in files, signs or the UI. Every new asset gets a row in [`CREDITS.md`](CREDITS.md) in the same commit; `tests/test_release_metadata.gd` fails if an asset folder has no credit row or a licence is not on the list.
+Only **CC0**, **CC-BY 4.0** (with credit), **SIL OFL** fonts and **GPL-3.0-compatible** code (MIT, BSD, Apache-2.0, GPL-3.0) are accepted: no NC/ND licences, no ripped game assets, and no real car brands, logos or model names in files, signs or the UI. Every new asset gets a row in [`CREDITS.md`](CREDITS.md) in the same commit; `tests/test_release_metadata.gd` fails if an asset folder has no credit row or a licence is not on the list.
 
 ## Pull requests
 Branch from `main`, keep each PR to one concern, make sure CI passes, and fill in the PR template. For a bug fix, add the test that fails without it. Open an issue first for a large change so we can agree on the approach.
+
+## License of your contribution
+SendIt is free software under the [GNU GPL v3.0](LICENSE). By opening a pull request you agree that your contribution is licensed under GPL-3.0 too, and you keep your own copyright on it.
+
+If you want something changed, send it here instead of starting a separate copy. Forks are allowed, but under the GPL a fork has to stay GPL-3.0, keep the original copyright and credit, publish its full source and say what it changed. It also needs its own name and icon, because the SendIt name and icon are not covered by the license.

@@ -9,5 +9,5 @@
 ## Checklist
 - [ ] `tools/gate.sh` prints `GATE: PASS`
 - [ ] Visual change: before/after frames attached (same seed and frames)
-- [ ] New asset: licence is CC0, CC-BY 4.0, OFL or MIT, and it has a row in `CREDITS.md`
+- [ ] New asset: licence is CC0, CC-BY 4.0, OFL or GPL-3.0-compatible code, and it has a row in `CREDITS.md`
 - [ ] No real car brands, logos or model names
