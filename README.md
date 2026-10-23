@@ -115,11 +115,11 @@ Gamepads work too: right and left trigger for throttle and brake, left stick to 
   </tr>
   <tr>
     <td><img src="docs/screenshots/hood.jpg" alt="Hood camera at 203 km/h closing on an orange truck"></td>
-    <td><img src="docs/screenshots/police.jpg" alt="A police pursuit with the heat meter and the EVADE and BUSTED bar"></td>
+    <td><img src="docs/screenshots/police.jpg" alt="A police pursuit: four cops close in, the red BUSTED bar filling"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/wreck.jpg" alt="A wreck: red flash, WRECKED banner and the lost combo points"></td>
-    <td><img src="docs/screenshots/combo.jpg" alt="Gameplay at 110 km/h with a x1.25 combo popup and the speedometer"></td>
+    <td><img src="docs/screenshots/wreck.jpg" alt="A wreck: WRECKED banner and the lost combo points"></td>
+    <td><img src="docs/screenshots/combo.jpg" alt="Pursuit traffic at 88 km/h: a pickup and a bus ahead, banked score and the heat meter"></td>
   </tr>
 </table>
 
