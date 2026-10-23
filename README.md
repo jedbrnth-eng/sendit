@@ -31,7 +31,7 @@
 
 <p align="center">
   <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt gameplay: a police pursuit ends in ESCAPED, then the car threads gaps in dense traffic at over 150 km/h" width="860"></a><br>
-  <sub>Autopilot run, rendered by the game itself at 1280×720. <a href="docs/demo.mp4">Watch in full quality</a>.</sub>
+  <sub>Autopilot run rendered by the game itself (a light preview, 576×324 at 20 fps). <a href="docs/demo.mp4">Watch the 30-second video in full quality</a>.</sub>
 </p>
 
 > **Status: early release (0.1).** Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
