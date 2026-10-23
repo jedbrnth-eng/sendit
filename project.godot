@@ -1,0 +1,48 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="SendIt"
+config/description="Night highway traffic weaving. Thread the gaps, bank the combo."
+config/version="0.1.0"
+config/icon="res://assets/icon/icon.png"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+Boot="*res://scripts/core/boot.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=0
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/vsync/vsync_mode=1
+
+[filesystem]
+
+import/blender/enabled=false
+import/fbx/enabled=false
+
+[physics]
+
+common/physics_ticks_per_second=120
+common/physics_interpolation=true
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_aa=1
+anti_aliasing/quality/use_taa=false
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/positional_shadow/atlas_size=4096
+environment/defaults/default_clear_color=Color(0.02, 0.025, 0.04, 1)
+textures/default_filters/anisotropic_filtering_level=4

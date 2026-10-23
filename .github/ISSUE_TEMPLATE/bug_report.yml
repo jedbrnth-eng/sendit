@@ -1,0 +1,37 @@
+name: Bug report
+description: Something in SendIt is broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS (Apple Silicon), macOS (Intel), Windows 11, Windows 10, Linux, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SendIt version
+      description: Shown at the bottom right of the title screen.
+      placeholder: "e.g. v0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: Computer and graphics card
+      placeholder: "e.g. MacBook Air M2, or Ryzen 5 + GTX 1660"
+  - type: textarea
+    id: log
+    attributes:
+      label: Log (optional)
+      description: "Run from a terminal with `--verbose` and paste the last lines, or attach a screenshot."
+      render: text

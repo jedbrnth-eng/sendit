@@ -1,0 +1,112 @@
+name: Release
+
+# Builds the macOS, Windows and Linux downloads, smoke-tests each one on its own OS, and publishes a GitHub
+# release tagged v<VERSION> (see the VERSION file).
+# Manual only (Actions tab -> Release -> Run workflow), so nothing ships by accident.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build all three platforms
+    runs-on: macos-15            # macOS build needs codesign (Apple Silicon only runs signed code)
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Read version
+        id: v
+        run: echo "tag=v$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Stop if this version is already released
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then
+            echo "::error::${{ steps.v.outputs.tag }} already exists. Bump VERSION and add a CHANGELOG section first."; exit 1
+          fi
+      - name: Install Godot (pinned, checksum-verified)
+        run: scripts/ci/install-godot.sh
+      - name: Gate (import, unit tests, 600-frame autopilot run)
+        run: tools/gate.sh
+      - name: Public-readiness check
+        run: scripts/check_public_ready.sh
+      - name: Export macOS, Windows and Linux
+        run: scripts/export.sh
+      - name: Smoke-test the exported macOS app
+        run: |
+          mkdir smoke && ditto -x -k dist/SendIt-macOS.zip smoke
+          python3 scripts/ci/smoke.py smoke/SendIt-*-macOS/SendIt.app/Contents/MacOS/SendIt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  smoke-linux:
+    name: Smoke-test the Linux download
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: dist
+          path: dist
+      - run: |
+          tar xzf dist/SendIt-Linux-x86_64.tar.gz
+          python3 scripts/ci/smoke.py SendIt-*-Linux-x86_64/SendIt.x86_64
+
+  smoke-windows:
+    name: Smoke-test the Windows download
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: dist
+          path: dist
+      - shell: bash
+        run: |
+          unzip -q dist/SendIt-Windows-x86_64.zip
+          python scripts/ci/smoke.py SendIt-*-Windows-x86_64/SendIt.exe
+
+  publish:
+    name: Publish the release
+    needs: [build, smoke-linux, smoke-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: dist
+          path: dist
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="$(tr -d '[:space:]' < VERSION)"
+          # Release notes = the download steps first (for everyone), then this version's CHANGELOG section.
+          cat .github/release-notes.md > notes.md
+          echo >> notes.md
+          awk -v h="## [$v]" 'index($0, h) == 1 {on = 1; print "## Changes in this version"; next} on && /^## \[/ {exit} on' CHANGELOG.md >> notes.md
+          (cd dist && sha256sum -c SHA256SUMS)
+          gh release create "v$v" dist/SendIt-macOS.zip dist/SendIt-Windows-x86_64.zip dist/SendIt-Linux-x86_64.tar.gz dist/SHA256SUMS \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" \
+            --title "SendIt v$v" --notes-file notes.md

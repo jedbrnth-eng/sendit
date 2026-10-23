@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:   # allow a manual re-run from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Tests and headless smoke run
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install Godot (pinned, checksum-verified)
+        run: scripts/ci/install-godot.sh
+      - name: Gate (import, unit tests, 600-frame autopilot run)
+        run: tools/gate.sh
+      - name: Scripts are valid shell
+        run: |
+          for f in scripts/*.sh scripts/ci/*.sh tools/*.sh; do bash -n "$f" || exit 1; done
+      - name: Export presets are present for all three platforms
+        run: |
+          python3 - <<'PY'
+          import configparser
+          cfg = configparser.ConfigParser(interpolation=None)
+          cfg.read("export_presets.cfg")
+          names = [cfg[s]["name"] for s in cfg.sections() if s.count(".") == 1]
+          assert names == ['"macOS"', '"Windows"', '"Linux"'], names
+          PY
+      - name: No personal paths or data in the repo
+        run: scripts/check_public_ready.sh
