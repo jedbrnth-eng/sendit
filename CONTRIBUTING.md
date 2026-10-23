@@ -9,7 +9,7 @@ Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT
 godot --path .                        # play
 godot --path . -- --autodrive         # let the autopilot drive (attract mode, useful for profiling)
 ```
-Launch arguments go after `--`: `--screen=title|run|results|drive`, `--seed=<n>`, `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`. They are parsed in `scripts/core/boot.gd`.
+Launch arguments go after `--`: `--screen=title|run|results|drive`, `--seed=<n>`, `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`, `--cam=hood|rear|side|front|wheel` (camera proof shots), `--no-hud` (clean promo frames). They are parsed in `scripts/core/boot.gd`.
 
 ## Test
 ```
