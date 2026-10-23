@@ -12,4 +12,4 @@ Controls: W/S throttle and brake, A/D steer, C camera, R restart,
 Needs 64-bit Windows 10 or later and a GPU with Vulkan 1.2 drivers
 (any PC from the last several years; update your graphics driver if it won't start).
 Project page: https://github.com/jedbrnth-eng/sendit
-Licence: MIT (see LICENSE). Third-party credits: CREDITS.md
+Licence: GPL-3.0 (see LICENSE). Third-party credits: CREDITS.md

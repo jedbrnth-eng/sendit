@@ -2,7 +2,7 @@ extends RefCounted
 ## Release hygiene: one version everywhere, and every shipped asset is credited under an allowed licence.
 
 var runner
-const ALLOWED := ["CC0", "CC-BY 4.0", "SIL OFL 1.1", "MIT"]  # MIT = original work in this repo
+const ALLOWED := ["CC0", "CC-BY 4.0", "SIL OFL 1.1", "GPL-3.0"]  # GPL-3.0 = original work in this repo
 
 
 func _read(path: String) -> String:
