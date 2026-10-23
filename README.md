@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt gameplay: a police pursuit ends in ESCAPED, then the car threads gaps in dense traffic at over 150 km/h" width="860"></a><br>
-  <sub>Autopilot run rendered by the game itself (a light preview, 576×324 at 20 fps). <a href="docs/demo.mp4">Watch the 30-second video in full quality</a>.</sub>
+  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt gameplay: a police pursuit on the night highway while the car threads gaps in dense traffic past trucks at over 150 km/h" width="860"></a><br>
+  <sub>Autopilot run rendered by the game itself (an 8-second light preview, 576×324 at 20 fps). <a href="docs/demo.mp4">Watch the 15-second video in full quality</a>.</sub>
 </p>
 
 > **Status: early release (0.1).** Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
@@ -115,11 +115,11 @@ Gamepads work too: right and left trigger for throttle and brake, left stick to 
   </tr>
   <tr>
     <td><img src="docs/screenshots/hood.jpg" alt="Hood camera at 203 km/h closing on an orange truck"></td>
-    <td><img src="docs/screenshots/police.jpg" alt="A police pursuit with the heat meter and the EVADE and BUSTED bar"></td>
+    <td><img src="docs/screenshots/police.jpg" alt="A police pursuit: four cops close in, the red BUSTED bar filling"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/wreck.jpg" alt="A wreck: red flash, WRECKED banner and the lost combo points"></td>
-    <td><img src="docs/screenshots/combo.jpg" alt="Gameplay at 110 km/h with a x1.25 combo popup and the speedometer"></td>
+    <td><img src="docs/screenshots/wreck.jpg" alt="A wreck: WRECKED banner and the lost combo points"></td>
+    <td><img src="docs/screenshots/combo.jpg" alt="Pursuit traffic at 88 km/h: a pickup and a bus ahead, banked score and the heat meter"></td>
   </tr>
 </table>
 
