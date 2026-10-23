@@ -24,5 +24,10 @@ if [ -n "$built" ]; then echo "FAIL: build output tracked in git:"; echo "$built
 brands=$(git ls-files | grep -i -E '(^|[^a-z])(ferrari|lamborghini|porsche|bmw|mercedes|audi|toyota|honda|nissan|tesla|bugatti|mclaren)([^a-z]|$)')
 if [ -n "$brands" ]; then echo "FAIL: real car marques in file names:"; echo "$brands" | head -5; fail=1; fi
 
+# Files the release build copies into every download must be tracked (a too-greedy .gitignore once hid them).
+for f in scripts/dist/README-macOS.txt scripts/dist/README-Windows.txt scripts/dist/README-Linux.txt LICENSE CREDITS.md export_presets.cfg; do
+  git ls-files --error-unmatch "$f" >/dev/null 2>&1 || { echo "FAIL: release file not tracked by git: $f"; fail=1; }
+done
+
 [ "$fail" -eq 0 ] && echo "OK: no personal data found"
 exit "$fail"
