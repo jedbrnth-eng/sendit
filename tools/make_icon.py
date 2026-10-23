@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the app icon (assets/icon/icon.png, 1024x1024) and, on macOS, assets/icon/icon.icns.
+"""Renders the app icon (assets/icon/icon.png 1024x1024, icon.ico for Windows) and, on macOS, assets/icon/icon.icns.
 
 Uses the game's own fonts and palette so the icon matches the title wordmark.
 usage: python3 tools/make_icon.py
@@ -82,6 +82,10 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     out.save(OUT / "icon.png")
     print("wrote", OUT / "icon.png")
+
+    # Windows .ico (16..256 px) for the exported .exe and its taskbar entry.
+    out.save(OUT / "icon.ico", format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    print("wrote", OUT / "icon.ico")
 
     if sys.platform == "darwin":
         iconset = OUT / "icon.iconset"

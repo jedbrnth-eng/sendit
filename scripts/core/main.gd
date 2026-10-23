@@ -10,6 +10,7 @@ extends Node3D
 ##   drive    no countdown, straight into the run (the default with --autodrive; capture/gate)
 ## --run-seconds=<s> overrides the 180 s run length. Autopilot runs never write the best score.
 ## --wreck-at=a,b,c forces a 140 km/h hit at those physics frames (proof shots of the wreck path).
+## Promo captures: --no-hud hides the HUD and pursuit panel.
 ## Police: --pursuit[=frame], --dist=<m>, --cam=pursuit (see scripts/police/police_manager.gd).
 
 ## Screen to open after the next scene reload (survives reload_current_scene as a static).
@@ -130,6 +131,9 @@ func _open(s: String) -> void:
 		_:  # "drive", "results"
 			player.autopilot = Autopilot.new(traffic)
 			session.start(false)
+	if Boot.has_arg("no-hud"):  # clean frames for promo shots
+		hud.visible = false
+		pursuit_hud.visible = false
 
 
 func _go(s: String) -> void:

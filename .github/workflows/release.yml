@@ -40,6 +40,8 @@ jobs:
         run: |
           mkdir smoke && ditto -x -k dist/SendIt-macOS.zip smoke
           python3 scripts/ci/smoke.py smoke/SendIt-*-macOS/SendIt.app/Contents/MacOS/SendIt
+      - name: Test the one-line installer against this exact build
+        run: scripts/ci/test-install.sh dist
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: dist
@@ -63,6 +65,8 @@ jobs:
       - run: |
           tar xzf dist/SendIt-Linux-x86_64.tar.gz
           python3 scripts/ci/smoke.py SendIt-*-Linux-x86_64/SendIt.x86_64
+      - name: Test the one-line installer on Linux
+        run: scripts/ci/test-install.sh dist
 
   smoke-windows:
     name: Smoke-test the Windows download
@@ -81,6 +85,8 @@ jobs:
         run: |
           unzip -q dist/SendIt-Windows-x86_64.zip
           python scripts/ci/smoke.py SendIt-*-Windows-x86_64/SendIt.exe
+          python -m pip install --quiet pefile==2024.8.26
+          python scripts/ci/check_windows_exe.py SendIt-*-Windows-x86_64/SendIt.exe
 
   publish:
     name: Publish the release

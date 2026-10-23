@@ -12,7 +12,10 @@ First public release.
 - **Title screen, HUD, results screen** and a saved personal best.
 - **Controls:** keyboard and gamepad; `F11` or `Alt`+`Enter` for fullscreen.
 - **Downloads** for macOS (Apple Silicon and Intel), Windows (x86-64) and Linux (x86-64), built and smoke-tested by the Release workflow, with `SHA256SUMS`.
-- 106 unit tests plus a headless 600-frame autopilot smoke run (`tools/gate.sh`), run by CI on every push.
+- **One-line installer** (`install.sh`) for macOS and Linux that verifies the download against `SHA256SUMS`; tested against each release build in CI.
+- Windows exe now carries its own icon and Properties (SendIt, not "Godot Engine"), checked in CI.
+- `--no-hud` and `--cam=hood` launch flags for clean promo captures.
+- 107 unit tests plus a headless 600-frame autopilot smoke run (`tools/gate.sh`), run by CI on every push.
 
 ### Fixed
 - Rear tyres of pickups, trucks, taxis and some cars were turned 90 degrees (lying along the car) because models that ship both rear tyres as one mesh had their axle misread; a test now audits every traffic model at every spin angle.
