@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # Proof run: real renderer (Metal), autopilot, screenshots at given physics frames, stats line.
 # usage: tools/capture.sh <out_dir> [frames=240,600,1200] [seed=7] [extra args...]
 set -u

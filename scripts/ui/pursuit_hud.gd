@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name PursuitHud extends CanvasLayer
 ## Pursuit overlay: bottom-centre PURSUIT panel (heat pips, cop count, nearest distance and the
 ## split EVADE | BUSTED meter), red/blue edge strobe while a cop is on you, and call-outs for

@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name RunSession extends RefCounted
 ## One timed run: ATTRACT (autopilot demo, nothing counts) -> COUNTDOWN -> RUNNING (3 min or
 ## 3 wrecks) -> RESULTS. Pure logic, no nodes: unit-tested by tests/test_run_session.gd.

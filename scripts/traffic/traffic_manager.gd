@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name TrafficManager extends Node3D
 ## Spawns and drives traffic around the player, resolves player-vs-traffic contact,
 ## and reports gaps (near misses) with their closest side clearance.

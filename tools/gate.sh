@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # The gate: import, unit tests, headless smoke boot (fails on any SCRIPT ERROR / ERROR line).
 # Prints GATE: PASS or GATE: FAIL and exits accordingly.
 # Uses `godot` from PATH (override with GODOT=/path/to/godot). Logs go to $GATE_LOG_DIR (default: a fresh temp dir).

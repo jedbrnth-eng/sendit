@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name LightBar extends Node3D
 ## Roof light bar: red (left) and blue (right) emissive lenses plus one red and one blue
 ## OmniLight that wash the car, the road and anything alongside. Strobes in the classic

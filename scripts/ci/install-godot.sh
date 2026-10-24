@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # Installs the pinned Godot editor and export templates (Linux x86_64 or macOS), verifying SHA-512
 # against the values published with the official release:
 #   https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable  (SHA512-SUMS.txt)

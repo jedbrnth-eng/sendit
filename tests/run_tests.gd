@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends SceneTree
 ## Headless test runner. Usage: godot --headless --path . -s tests/run_tests.gd
 ## Runs every `func test_*` in tests/test_*.gd. Prints `TESTS: <n> passed, <m> failed` and exits 1 on any failure.

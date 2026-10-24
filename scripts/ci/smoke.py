@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Launch an exported SendIt build headless for 600 physics frames on autopilot and fail on any error.
 
 usage: smoke.py <path-to-executable>

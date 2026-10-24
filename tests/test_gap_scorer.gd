@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## Mirrors the scoring tests of the earlier Unreal Engine prototype so both engines score identically.
 

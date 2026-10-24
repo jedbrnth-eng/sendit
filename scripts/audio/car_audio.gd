@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name CarAudio extends Node3D
 ## Engine: EngineModel picks a gear and RPM; the two RPM loops either side of it crossfade
 ## (equal power) and are pitched to match, with a throttle cut on upshifts. Plus side-panned

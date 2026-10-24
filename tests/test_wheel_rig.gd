@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## Wheel rig: tyres must sit under the car pointing the right way, in every traffic model, at every spin angle.
 ## Regression: models that ship the rear axle as ONE mesh (both tyres in a node) had the axle mis-detected,

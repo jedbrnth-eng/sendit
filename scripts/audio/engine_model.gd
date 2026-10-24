@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name EngineModel extends RefCounted
 ## Sound-only drivetrain: picks a gear from road speed (with hysteresis so it never hunts),
 ## derives RPM, and sweeps RPM down over a short shift so upshifts are audible.

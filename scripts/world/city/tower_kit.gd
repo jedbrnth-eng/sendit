@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name TowerKit extends RefCounted
 ## Procedural night towers that match the Shanghai HDRI: glass curtain walls, stacked setbacks,
 ## chamfered / round / tapered shafts, lit podiums, LED crowns and spires. `plan()` is pure data

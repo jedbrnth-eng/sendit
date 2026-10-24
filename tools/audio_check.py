@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Render the game's real audio mix (movie mode, autopilot) and count clicks.
 A click = a 2nd-difference spike above an absolute threshold, debounced 5 ms.
 usage: tools/audio_check.py <out_dir> [frames=1200] [seed=7]   (prints CLICKS: n (x/s), PEAK, RMS)

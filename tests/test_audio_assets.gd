@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## Guards against the engine-loop click (QOA compression + a hand-set loop_end past the data
 ## produced a click every loop wrap, ~2.7/s). Every looping bed must import as uncompressed PCM

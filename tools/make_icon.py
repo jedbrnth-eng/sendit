@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Builds the app icon set from docs/icon-source.jpg (square key art, no text):
 assets/icon/icon.png (1024), icon.ico (Windows), icon.icns (macOS, needs `iconutil`), docs/icon.png.
 

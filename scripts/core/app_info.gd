@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name AppInfo extends RefCounted
 ## Build identity and the in-game credit line. The version lives in `VERSION` and is mirrored in
 ## project.godot (tests/test_release_metadata.gd keeps the two equal).

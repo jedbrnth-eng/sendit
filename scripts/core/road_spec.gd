@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name RoadSpec
 ## Single source of truth for highway geometry. Road runs along -Z (player drives toward -Z).
 ## Our carriageway is x > 0 (right-hand traffic), oncoming is x < 0, concrete median at x = 0.

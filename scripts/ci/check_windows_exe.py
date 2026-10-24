@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Fail if the exported Windows exe lacks its icon or still identifies itself as "Godot Engine" in its Properties.
 
 usage: check_windows_exe.py <SendIt.exe>      (needs `pip install pefile`)

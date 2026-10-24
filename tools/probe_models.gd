@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends SceneTree
 ## Prints each car model's raw AABB so orientation/scale assumptions in CarModel can be checked.
 

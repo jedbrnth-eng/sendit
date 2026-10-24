@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # Fails if the repo leaks personal data or ships something it should not. CI and the release run it.
 # Checks: absolute home paths, personal email addresses, machine-local commit identities, .DS_Store in
 # history, build outputs tracked in git, and real car marques in tracked file names.

@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name CopBrain
 ## Chase driving for one pursuit cop, pure (unit-tested by tests/test_police_brain.gd).
 ## Cars are Dictionaries {x, z, v, hx, hz, lat_v}: world x/z, speed (m/s toward -Z), half

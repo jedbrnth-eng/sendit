@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node3D
 ## Game root: wires world, player, traffic, scoring, HUD, audio and the run flow
 ## (title/attract -> countdown -> 3-minute run -> results). Also the proof harness

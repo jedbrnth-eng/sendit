@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # Tests install.sh against a local copy of a release (no network, no real /Applications).
 #
 #   scripts/ci/test-install.sh <dir-with-release-assets>

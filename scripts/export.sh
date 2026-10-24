@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # Builds the three downloadable archives into dist/ and writes dist/SHA256SUMS.
 # Archive names are fixed (SendIt-macOS.zip, SendIt-Windows-x86_64.zip, SendIt-Linux-x86_64.tar.gz) so the
 # README can link to .../releases/latest/download/<name>; the folder inside carries the version.

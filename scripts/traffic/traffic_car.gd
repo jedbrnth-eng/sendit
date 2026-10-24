@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name TrafficCar extends Node3D
 ## One traffic vehicle. Lives in a lane, follows the car ahead (IDM), sometimes changes lane.
 

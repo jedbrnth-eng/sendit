@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name Logo extends Control
 ## SEND IT wordmark drawn in code: forward-leaning Russo One, a pink extrusion, a cyan/pink
 ## chromatic split, speed streaks trailing off the left, and a slash bar carrying `tagline`.
