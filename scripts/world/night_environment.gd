@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name NightEnvironment extends WorldEnvironment
 ## Night look: HDRI city sky, AgX tonemap, bloom for lamps/tail-lights, SSR on the damp road,
 ## SSAO, volumetric fog so sodium lamps throw visible cones, and a cool moon key light.

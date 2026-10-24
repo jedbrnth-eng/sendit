@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name ResultsScreen extends CanvasLayer
 ## End-of-run card: banked score rolls up, stat tiles stagger in, NEW BEST celebration,
 ## then a "press any key to run again" prompt. main.gd handles the input.

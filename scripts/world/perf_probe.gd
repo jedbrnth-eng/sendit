@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name PerfProbe extends Node
 ## Frame-time evidence for look changes: averages process fps plus GPU/CPU render time of the
 ## main viewport (vsync-independent), skipping the first 120 frames of shader warm-up.

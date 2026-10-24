@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Renders docs/social-preview.png (1280x640), the card GitHub shows when the repo link is shared.
 
 Upload it in the repo's Settings > Social preview (GitHub has no API for that).

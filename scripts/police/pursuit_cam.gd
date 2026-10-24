@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name PursuitCam extends Camera3D
 ## Proof camera (--cam=pursuit): hangs ahead of and beside the player, low, looking back past the
 ## car at the nearest chaser so the light bars and the player share the frame. Not used in play.

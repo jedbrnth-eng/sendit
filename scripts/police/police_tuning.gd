@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name PoliceTuning
 ## Every police tunable in one place. Difficulty t runs 0 (start of a run) -> 1 (FULL_AT_M driven,
 ## or less with heat); `at(t)` lerps EASY -> HARD. Pure, unit-tested by tests/test_police_rules.gd.

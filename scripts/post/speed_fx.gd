@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name SpeedFx extends CanvasLayer
 ## Screen-space post pass (scripts/post/speed_fx.gdshader). Sits below the HUD layer so UI stays
 ## crisp. Speed comes from the active camera's own motion, so it needs no link to the car.

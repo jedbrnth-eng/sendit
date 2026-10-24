@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name AudioMix
 ## Bus layout, built in code so it is diffable:
 ##   Engine -> EQ (low-mid weight, tame fizz) + soft drive + compressor -> Master

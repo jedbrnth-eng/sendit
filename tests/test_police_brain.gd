@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## CopBrain: chase steering decisions (pure). Cops pick free lanes, never cut into a car that is
 ## alongside, brake for leaders, flank the player, and a closed-loop sim proves they chase without

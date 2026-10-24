@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name GapScorer extends RefCounted
 ## Gap scoring core, ported 1:1 from the earlier Unreal Engine prototype.
 ## Pure logic, no nodes: unit-tested by tests/test_gap_scorer.gd.

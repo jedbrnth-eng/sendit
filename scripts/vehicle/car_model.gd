@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name CarModel
 ## Builds a car visual from any GLB: scales to a target length, centres it on the ground and turns
 ## it to face -Z. The model's own head/tail-light geometry (found by material name) becomes glowing

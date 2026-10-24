@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node3D
 ## World-only debug shots of the city (no cars, no HUD). Run with the real renderer:
 ##   godot --path . --resolution 1920x1080 scripts/world/city/city_probe.tscn -- --out=<dir>

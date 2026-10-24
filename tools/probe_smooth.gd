@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node
 ## Smoothness probe: runs the real game (autodrive) and, every rendered frame, records how far the
 ## camera moved along the road per second. With judder that rate jumps frame to frame even at a

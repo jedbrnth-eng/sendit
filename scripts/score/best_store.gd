@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name BestStore extends RefCounted
 ## Personal bests in user:// (ConfigFile). Unit-tested by tests/test_best_store.gd.
 

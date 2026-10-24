@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Make seamless audio loops: equal-power crossfade of the tail into the head, then report the
 seam step vs the clip's typical sample step (a click shows as a seam step far above typical).
 usage: tools/make_loop.py <in> <out.wav> [start_s] [len_s] [xfade_s]

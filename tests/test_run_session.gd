@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## Run flow: countdown -> 3-minute run (or 3 wrecks) -> results. Pure logic, no nodes.
 

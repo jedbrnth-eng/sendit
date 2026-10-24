@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends RefCounted
 ## Release hygiene: one version everywhere, and every shipped asset is credited under an allowed licence.
 

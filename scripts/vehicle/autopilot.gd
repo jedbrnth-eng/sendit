@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name Autopilot extends RefCounted
 ## Demo pilot for proof runs and attract mode: holds a cruise speed and weaves into the lane
 ## with the most free road, deliberately passing close. Returns Vector3(steer, throttle, brake).

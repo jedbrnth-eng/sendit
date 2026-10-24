@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name CopCar extends TrafficCar
 ## A police unit. Lives in traffic like any car (TrafficManager drives it as a patrol) until it
 ## joins a pursuit; then PoliceManager owns it and drives it with CopBrain. Parked units sit on

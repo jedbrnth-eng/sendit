@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node
 ## Autoload: input map (in code, so it is diffable) and launch args.
 ## Launch args (after `--`):

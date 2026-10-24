@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends SceneTree
 ## Wheel audit: for every traffic model, report each wheel's ride height and how far its centre
 ## wanders while spinning. usage: godot --headless --path . -s tools/probe_wheels.gd

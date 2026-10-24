@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 # SendIt installer for macOS and Linux. Downloads the latest release, verifies it against the release's
 # SHA256SUMS, installs it and (on a Mac) clears the download flag so there is no "Open Anyway" step.
 # Source: https://github.com/jedbrnth-eng/sendit

@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name ChaseCamera extends Camera3D
 ## Low chase cam: lags on lateral moves, widens FOV with speed, shakes on crashes,
 ## and a hood cam toggle ("camera" action). Proof shots: launch arg --cam=rear|front|side|wheel

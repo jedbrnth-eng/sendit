@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name Highway extends Node3D
 ## Streams 100 m road chunks around the player: asphalt, lane paint, median barrier,
 ## guard rails, sodium street lamps, and a procedural lit skyline (TowerKit). Deterministic per chunk index.

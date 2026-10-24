@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 """Cut one-shot SFX from long CC0 recordings (BigSoundBank).
 - pass-bys: the loudest `win` seconds around the RMS peak, high-passed rumble, fades, -1 dBFS.
 - crash: layered steel crunch + door thump + glass, offset slightly, fades, -1 dBFS.

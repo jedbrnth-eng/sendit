@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name Speedo extends Control
 ## Arc speedometer: 270-degree ring that fills cyan -> white -> gold -> hot pink with speed,
 ## tick marks every 20 km/h, glowing tip, big digital readout in the middle.

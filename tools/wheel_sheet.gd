@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node3D
 ## Rear three-quarter view of every traffic model, one PNG each, to check the tyres by eye.
 ## usage: godot --path . res://tools/wheel_sheet.tscn -- --out=/some/dir [--spin=0.7]

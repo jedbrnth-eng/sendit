@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends SceneTree
 ## Lists hero-model nodes whose names hint at the cockpit (steering wheel, seat, dash) with car-space AABBs.
 

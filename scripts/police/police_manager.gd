@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name PoliceManager extends Node3D
 ## Police in the world: spawns patrol cops into traffic (and parked on the shoulder) at a rate
 ## that rises with distance, starts a pursuit when you blow past one (or hit one), drives the

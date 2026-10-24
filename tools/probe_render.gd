@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 extends Node3D
 ## Debug scene: highway only, fixed camera, optional night env. Saves /tmp/sendit_probe_<env>.png
 

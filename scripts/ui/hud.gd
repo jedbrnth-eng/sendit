@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Jed Brown
+# SPDX-License-Identifier: GPL-3.0-only
+# Part of SendIt: https://github.com/jedbrnth-eng/sendit
+
 class_name Hud extends CanvasLayer
 ## In-run HUD: banked score with roll-up, live combo with heat bar and pulsing multiplier,
 ## punchy gap pop-ups, run clock and wreck pips, arc speedometer, countdown, wreck edge flash.
