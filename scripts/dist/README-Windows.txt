@@ -7,7 +7,7 @@ SendIt - night highway traffic racer
    "More info", then "Run anyway". SendIt is not code-signed yet.
 
 Controls: W/S throttle and brake, A/D steer, C camera, R restart,
-          F11 fullscreen, Esc title screen. Gamepads work too.
+          F11 fullscreen, Esc pause and settings. Gamepads work too.
 
 Needs 64-bit Windows 10 or later and a GPU with Vulkan 1.2 drivers
 (any PC from the last several years; update your graphics driver if it won't start).

@@ -119,7 +119,7 @@ func _process(delta: float) -> void:
 			w = sin(x * PI * 0.5)
 		var target := linear_to_db(maxf(w * level, 0.0001)) - 7.0
 		_engine[i].volume_db = lerpf(_engine[i].volume_db, target, clampf(delta * 25.0, 0.0, 1.0))
-		_engine[i].pitch_scale = clampf(rpm / LOOP_RPM[i], 0.6, 1.7)
+		_engine[i].pitch_scale = clampf(rpm / LOOP_RPM[i] * player.engine_pitch, 0.6, 2.2)
 	var slip := absf(player.steer_input) * clampf(kmh / 160.0, 0.0, 1.0) + player.brake * clampf(kmh / 120.0, 0.0, 1.0) * 0.8
 	_skid.volume_db = lerpf(_skid.volume_db, linear_to_db(maxf(slip - 0.55, 0.0001)) - 4.0, delta * 10.0)
 	var sp := clampf(kmh / 280.0, 0.0, 1.0)

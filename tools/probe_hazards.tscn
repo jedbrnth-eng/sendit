@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/probe_hazards.gd" id="1"]
+
+[node name="ProbeHazards" type="Node3D"]
+script = ExtResource("1")

@@ -7,6 +7,9 @@ class_name NightEnvironment extends WorldEnvironment
 ## SSAO, volumetric fog so sodium lamps throw visible cones, and a cool moon key light.
 
 const HDRI := "res://assets/hdri/shanghai_bund_4k.hdr"
+const GROUP := &"night_env"   # Settings.apply() calls apply_settings() on this group
+
+var _moon: DirectionalLight3D
 
 
 func _ready() -> void:
@@ -68,6 +71,7 @@ func _ready() -> void:
 	environment = env
 
 	var moon := DirectionalLight3D.new()
+	_moon = moon
 	moon.light_color = Color(0.55, 0.65, 0.95)
 	moon.light_energy = 0.12
 	moon.rotation_degrees = Vector3(-35, 150, 0)
@@ -76,3 +80,24 @@ func _ready() -> void:
 	add_child(moon)
 	add_child(PerfProbe.new())
 	add_child(SpeedFx.new())
+	add_to_group(GROUP)
+	apply_settings(Settings.get_current())
+
+
+## Graphics settings (0 low .. 2 high; HIGH is the look above). Shadows: moon shadow + SSAO from
+## LOW up, SSR at HIGH (headlight shadows are the viewport's positional atlas, set by Settings).
+## Glow: bloom off / soft / full, volumetric lamp cones from MEDIUM. Draw: fog reach.
+func apply_settings(s: Settings) -> void:
+	var env := environment
+	if env == null:
+		return
+	var sh: int = s.get_value("shadows")
+	var gl: int = s.get_value("glow")
+	_moon.shadow_enabled = sh >= 1
+	_moon.directional_shadow_max_distance = 120.0 if sh >= 2 else 70.0
+	env.ssao_enabled = sh >= 1
+	env.ssr_enabled = sh >= 2
+	env.glow_enabled = gl >= 1
+	env.glow_intensity = 0.9 if gl >= 2 else 0.55
+	env.volumetric_fog_enabled = gl >= 1
+	env.fog_density = [0.0028, 0.002, 0.0016][int(s.get_value("draw"))]

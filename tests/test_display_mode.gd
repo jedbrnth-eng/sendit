@@ -56,3 +56,19 @@ func test_hotkey_recognition() -> void:
 	runner.check(not dm.is_toggle_event(f11_echo), "held key repeat does not flicker the mode")
 	runner.check(not dm.is_toggle_event(w), "gameplay keys do not")
 	runner.check(not dm.is_toggle_event(InputEventMouseMotion.new()), "non-key events do not")
+
+
+func test_hotkey_writes_the_fullscreen_setting() -> void:
+	# One source of truth: F11 flips and saves the same "fullscreen" value the settings menu shows.
+	var old_file := Settings.file
+	Settings.file = "user://_test_display_mode.cfg"
+	var st := Settings.new()
+	var before := DisplayMode.is_fullscreen(DisplayServer.window_get_mode())
+	st.set_value("fullscreen", before)
+	DisplayMode.apply_toggle(st)
+	runner.check(st.get_value("fullscreen") == (not before), "hotkey flips the fullscreen setting")
+	var t := Settings.new()
+	t.load_from()
+	runner.check(t.get_value("fullscreen") == (not before), "and saves it for the next launch")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(Settings.file))
+	Settings.file = old_file

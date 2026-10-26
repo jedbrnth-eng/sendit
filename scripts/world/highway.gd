@@ -22,6 +22,9 @@ const PLACES := ["NEON BAY", "KOVA HEIGHTS", "SILVERMOUTH", "PORT ARDEN", "LUMEN
 	"HALCYON DOCKS", "VESPER HILL", "RIVERGATE", "SOLACE PARK", "IRONSIDE"]
 const THROUGH := ["CITY CENTRE", "AIRPORT", "HARBOUR", "RING ROAD"]
 
+## Settings: share of RoadSpec.VIEW_AHEAD to build (graphics draw distance).
+static var draw_scale := 1.0
+
 var chunks := {}  # index -> Node3D
 var _asphalt_mat: ShaderMaterial
 var _paint_mat: StandardMaterial3D
@@ -84,7 +87,7 @@ func _ready() -> void:
 ## Chunk index range [x, y] to keep alive. Chunk i spans z in [-(i+1)*L, -i*L].
 static func chunk_range(player_z: float) -> Vector2i:
 	return Vector2i(int(floor(-(player_z + RoadSpec.VIEW_BEHIND) / RoadSpec.CHUNK_LEN)),
-		int(floor(-(player_z - RoadSpec.VIEW_AHEAD) / RoadSpec.CHUNK_LEN)))
+		int(floor(-(player_z - RoadSpec.VIEW_AHEAD * draw_scale) / RoadSpec.CHUNK_LEN)))
 
 
 func update_stream(player_z: float) -> void:

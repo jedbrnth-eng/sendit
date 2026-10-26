@@ -8,8 +8,14 @@ extends Node
 ##   --capture=<dir>     save PNG frames there (see Capture in main.gd)
 ##   --capture-frames=a,b,c  physics-frame indices to snapshot, then quit after the last
 ##   --autodrive         an AI pilot weaves traffic (for proof runs and the attract mode)
-##   --seed=<int>        deterministic traffic
+##   --seed=<int>        deterministic round (default: fresh every round; 7 for --autodrive/--capture)
 ##   --quit-after=<n>    quit after n physics frames
+##   --settings-file=<path>  read/write settings there instead of user://settings.cfg
+##   --garage-file=<path>    read/write the last chosen car there instead of user://garage.cfg
+##   --profile-file=<path>  read/write the progression profile there instead of user://profile.cfg
+##   --loadout=a,b,c     proof: force those garage items onto the player car (never saved)
+##   --plate=TEXT        proof: plate text (filtered)
+##   --windowed          ignore the saved fullscreen setting
 
 var args: Dictionary = {}
 
@@ -31,6 +37,41 @@ func _init() -> void:
 		var kv := s.split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else "true"
 	_build_input_map()
+	_extend_ui_actions()
+
+
+func _ready() -> void:
+	# Saved settings (audio, graphics, display, camera, keys) apply before the first scene frame.
+	if has_arg("settings-file"):
+		Settings.file = String(arg("settings-file"))
+	if has_arg("garage-file"):
+		GarageStore.file = String(arg("garage-file"))
+	if has_arg("profile-file"):
+		ProfileStore.file = String(arg("profile-file"))
+	var st := Settings.get_current()
+	st.load_from()
+	st.apply(get_tree())
+
+
+## Menus: WASD navigates too, and the pad's A accepts / B backs out (the engine defaults have
+## arrows, d-pad and stick, but no pad buttons for ui_accept / ui_cancel).
+func _extend_ui_actions() -> void:
+	var extra := {
+		"ui_up": [KEY_W], "ui_down": [KEY_S], "ui_left": [KEY_A], "ui_right": [KEY_D],
+		"ui_accept": [JOY_BUTTON_A], "ui_cancel": [JOY_BUTTON_B],
+	}
+	for action in extra:
+		for spec in extra[action]:
+			var ev: InputEvent
+			if spec >= KEY_SPACE:
+				var k := InputEventKey.new()
+				k.physical_keycode = spec
+				ev = k
+			else:
+				var b := InputEventJoypadButton.new()
+				b.button_index = spec
+				ev = b
+			InputMap.action_add_event(action, ev)
 
 
 func _build_input_map() -> void:
@@ -57,7 +98,7 @@ func _build_input_map() -> void:
 
 func _input(e: InputEvent) -> void:
 	if DisplayMode.is_toggle_event(e):
-		DisplayMode.apply_toggle()
+		DisplayMode.apply_toggle(Settings.get_current(), get_tree())
 		get_viewport().set_input_as_handled()
 
 

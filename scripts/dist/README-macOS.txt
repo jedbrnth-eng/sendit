@@ -11,7 +11,7 @@ SendIt - night highway traffic racer
        xattr -dr com.apple.quarantine /Applications/SendIt.app
 
 Controls: W/S throttle and brake, A/D steer, C camera, R restart,
-          F11 fullscreen, Esc title screen. Gamepads work too.
+          F11 fullscreen, Esc pause and settings. Gamepads work too.
 
 Needs macOS 12 or later (Apple Silicon or Intel).
 Project page: https://github.com/jedbrnth-eng/sendit

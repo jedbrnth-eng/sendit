@@ -7,11 +7,15 @@ class_name AudioMix
 ##   Engine -> EQ (low-mid weight, tame fizz) + soft drive + compressor -> Master
 ##   Road   -> low-pass (road roar / wind sit under the engine)       -> Master
 ##   SFX    -> small reverb send for space                            -> Master
+##   Engine/Road/SFX -> Effects (the settings SFX level) -> Master
+##   Music  -> Master (the settings music level; nothing plays on it yet)
 ##   Master -> limiter (no clipping when wreck + whoosh + engine stack up)
 
 const ENGINE := &"Engine"
 const ROAD := &"Road"
 const SFX := &"SFX"
+const EFFECTS := &"Effects"
+const MUSIC := &"Music"
 
 
 static func ensure_buses() -> void:
@@ -22,8 +26,10 @@ static func ensure_buses() -> void:
 	lim.ceiling_db = -0.5
 	lim.pre_gain_db = 0.0
 	AudioServer.add_bus_effect(master, lim)
+	_add(EFFECTS, 0.0)
+	_add(MUSIC, 0.0)
 
-	var e := _add(ENGINE, -2.0)
+	var e := _add(ENGINE, -2.0, EFFECTS)
 	var eq := AudioEffectEQ6.new()
 	# bands: 32, 100, 320, 1000, 3200, 10000 Hz
 	for b in [[0, 0.0], [1, 3.5], [2, 2.0], [3, 0.0], [4, -3.0], [5, -7.0]]:
@@ -43,12 +49,12 @@ static func ensure_buses() -> void:
 	comp.release_ms = 120.0
 	AudioServer.add_bus_effect(e, comp)
 
-	var r := _add(ROAD, -3.0)
+	var r := _add(ROAD, -3.0, EFFECTS)
 	var lp := AudioEffectLowPassFilter.new()
 	lp.cutoff_hz = 3500.0
 	AudioServer.add_bus_effect(r, lp)
 
-	var s := _add(SFX, 0.0)
+	var s := _add(SFX, 0.0, EFFECTS)
 	var rev := AudioEffectReverb.new()
 	rev.room_size = 0.35
 	rev.damping = 0.6
@@ -57,10 +63,10 @@ static func ensure_buses() -> void:
 	AudioServer.add_bus_effect(s, rev)
 
 
-static func _add(name: StringName, db: float) -> int:
+static func _add(name: StringName, db: float, send := &"Master") -> int:
 	AudioServer.add_bus()
 	var i := AudioServer.bus_count - 1
 	AudioServer.set_bus_name(i, name)
 	AudioServer.set_bus_volume_db(i, db)
-	AudioServer.set_bus_send(i, &"Master")
+	AudioServer.set_bus_send(i, send)
 	return i

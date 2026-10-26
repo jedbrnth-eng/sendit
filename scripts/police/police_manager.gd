@@ -31,6 +31,7 @@ var cops: Array[CopCar] = []
 var dist_offset := 0.0
 var nearest_m := INF
 var rng := RandomNumberGenerator.new()
+var _seed := 0
 var stats := {"escapes": 0, "busted": 0, "cop_hits": 0, "max_chasers": 0, "rams": 0,
 	"backup": 0, "fps_sum": 0.0, "fps_n": 0, "closest_m": INF}
 var _next_patrol_m := 250.0
@@ -47,6 +48,7 @@ func setup(t: TrafficManager, p: PlayerCar, s: RunSession, seed_value: int) -> v
 	player = p
 	session = s
 	rng.seed = seed_value * 31 + 5
+	_seed = seed_value
 	dist_offset = float(LaunchArgs.get_value("dist", "0"))
 	if LaunchArgs.has("pursuit"):
 		var v := String(LaunchArgs.get_value("pursuit"))
@@ -137,6 +139,8 @@ func _spawn_patrol(z: float) -> CopCar:
 	var parked: bool = rng.randf() < tune.parked_share
 	var lane := rng.randi_range(0, RoadSpec.LANES - 1)
 	var x := RoadSpec.lane_x(lane)
+	if parked and not ShoulderHazards.is_free(z, 3.0, _seed):
+		parked = false  # that stretch of shoulder is taken by a hazard: patrol the lane instead
 	if parked:
 		x = RoadSpec.outer_edge() - RoadSpec.OUTER_SHOULDER * 0.5 - 0.15
 	for c in traffic.cars:

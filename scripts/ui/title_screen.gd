@@ -86,8 +86,10 @@ func _ready() -> void:
 			(c as Label).vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			(c as Label).size_flags_vertical = Control.SIZE_FILL
 
+	_build_progress(root, display, body, semi)
+
 	var keys := _label(root, body, 22, Color(1, 1, 1, 0.6))
-	keys.text = "W/S  THROTTLE · BRAKE      A/D  STEER      C  CAMERA      R  RESTART      F11  FULLSCREEN      ESC  TITLE"
+	keys.text = "W/S  THROTTLE · BRAKE      A/D  STEER      C  CAMERA      R  RESTART      F11  FULLSCREEN      ESC  SETTINGS"
 	_place(keys, Control.PRESET_BOTTOM_LEFT, 152, -84, 1300, 34)
 	var ver := _label(root, body, 22, Color(PINK, 0.9))
 	ver.text = AppInfo.version_label()
@@ -97,6 +99,58 @@ func _ready() -> void:
 	var credit := _label(root, semi, 16, Color(1, 1, 1, 0.55))
 	credit.text = "   \u00b7   ".join(AppInfo.attribution_lines()) + "   \u00b7   More in CREDITS.md"
 	_place(credit, Control.PRESET_BOTTOM_LEFT, 152, -44, 1600, 24)
+
+
+## Right column: level, XP bar, credits, the next unlock teaser and this session's three run goals.
+func _build_progress(root: Control, display: Font, body: Font, semi: Font) -> void:
+	var prof := ProfileStore.get_current()
+	prof.ensure_goals()
+	root.add_child(_gradient(Vector2(1, 0), Vector2(0, 0), Color(0.01, 0.0, 0.04, 0.78), Color(0.01, 0.0, 0.04, 0.0), Control.PRESET_RIGHT_WIDE, 820))
+	var x := -700.0
+	var p := XpCurve.progress(prof.xp)
+	var lvl := _label(root, display, 64, Color.WHITE)
+	lvl.text = "LVL %d" % p.level
+	_place(lvl, Control.PRESET_TOP_RIGHT, x, 150, 300, 80)
+	var cr := _label(root, display, 40, GOLD)
+	cr.text = "%s CR" % Hud._fmt(prof.credits)
+	cr.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_place(cr, Control.PRESET_TOP_RIGHT, x + 300, 166, 300, 56)
+	var back := ColorRect.new()
+	back.color = Color(1, 1, 1, 0.12)
+	_place(back, Control.PRESET_TOP_RIGHT, x, 240, 600, 16)
+	root.add_child(back)
+	var fill := ColorRect.new()
+	fill.color = Color(0.55, 1.0, 0.2)
+	_place(fill, Control.PRESET_TOP_RIGHT, x, 240, 600.0 * float(p.fraction), 16)
+	root.add_child(fill)
+	var xpl := _label(root, body, 20, Color(1, 1, 1, 0.6))
+	xpl.text = "MAX LEVEL" if p.level >= XpCurve.MAX_LEVEL else "%s / %s XP" % [Hud._fmt(p.into), Hud._fmt(p.need)]
+	_place(xpl, Control.PRESET_TOP_RIGHT, x, 262, 600, 28)
+	var nu := prof.next_unlock()
+	if not nu.is_empty():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		_place(row, Control.PRESET_TOP_RIGHT, x, 300, 640, 40)
+		root.add_child(row)
+		var sw := ColorRect.new()
+		sw.custom_minimum_size = Vector2(22, 22)
+		sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sw.color = GarageSwatch.color_of(nu.item)
+		row.add_child(sw)
+		var t := _label(row, body, 24, Color(PINK, 1.0))
+		t.text = "NEXT UNLOCK  %s %s  IN %s XP" % [String(UnlockCatalog.SLOT_NAMES[nu.item.slot]), String(nu.item.name).to_upper(), Hud._fmt(nu.xp_left)]
+	var gh := _label(root, body, 22, Color(1, 1, 1, 0.55))
+	gh.text = "RUN GOALS"
+	_place(gh, Control.PRESET_TOP_RIGHT, x, 380, 600, 30)
+	var y := 414.0
+	for g in prof.goals:
+		var gl := _label(root, semi, 26, Color.WHITE)
+		gl.text = "◆  " + String(g.text)
+		_place(gl, Control.PRESET_TOP_RIGHT, x, y, 640, 34)
+		var rw := _label(root, body, 20, GOLD)
+		rw.text = "+%d XP   +%d CR" % [int(g.xp), int(g.credits)]
+		_place(rw, Control.PRESET_TOP_RIGHT, x + 36, y + 34, 600, 26)
+		y += 72.0
 
 
 func _process(delta: float) -> void:
@@ -118,6 +172,8 @@ func _gradient(from: Vector2, to: Vector2, a: Color, b: Color, preset: int, exte
 	r.set_anchors_preset(preset)
 	if preset == Control.PRESET_LEFT_WIDE:
 		r.offset_right = extent
+	elif preset == Control.PRESET_RIGHT_WIDE:
+		r.offset_left = -extent
 	else:
 		r.offset_top = -extent
 	return r

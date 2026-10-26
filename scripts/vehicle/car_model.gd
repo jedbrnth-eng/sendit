@@ -21,6 +21,7 @@ static var _rigs := {}        # build key -> {head, tail, clusters, hide, body_m
 static var _mats := {}
 static var _paints := {}
 static var _ground := {}      # path|yaw -> y of the tyre contact patch in unscaled model space
+static var _body_w := {}      # build key -> body half width (m, mirrors excluded)
 
 
 ## Drop cached scenes/materials (statics outlive the tree and trip the exit leak check).
@@ -30,6 +31,9 @@ static func release() -> void:
 	_mats.clear()
 	_paints.clear()
 	_ground.clear()
+	_body_w.clear()
+	CarCatalog.release()
+	CarStyle.release()
 
 
 ## width_m/height_m > 0 stretch that axis separately (legacy, for toy-proportioned models);
@@ -67,6 +71,9 @@ static func build(path: String, length_m: float, width_m := 0.0, height_m := 0.0
 	if not _rigs.has(key):
 		_rigs[key] = _scan(model, pivot.transform * model.transform, half, height)
 	var rig: Dictionary = _rigs[key]
+	if not _body_w.has(key):
+		_body_w[key] = body_half_width(model, pivot.transform * model.transform, half)
+	root.set_meta("body_half_width", _body_w[key])
 	root.set_meta("lamp_clusters", rig.clusters)
 	_add_lamps(root, model, rig, lamps)
 	_fix_glass(model)
@@ -481,6 +488,35 @@ static func ground_y(model: Node3D, xf: Transform3D, fallback: AABB) -> float:
 		var r: float = dims[1] * 0.5 * to_model.basis.get_scale().abs().x
 		y = minf(y, (to_model * local.get_center()).y - r)
 	return y if y != INF else fallback.position.y
+
+
+## Half width of the body itself, for collision: the widest point of most 0.25 m slices along the
+## middle 80% of the length (75th percentile), so mirrors, door handles and a wheel flare that each
+## span a slice or two do not count, but the body sides do. Vertices below 8 cm are ignored.
+static func body_half_width(model: Node3D, xf: Transform3D, half: Vector2) -> float:
+	var bins := {}
+	_width_bins(model, xf, bins, half.y * 0.8)
+	var w: Array = bins.values()
+	if w.is_empty():
+		return half.x
+	w.sort()
+	return minf(w[int(floor((w.size() - 1) * 0.75))], half.x)
+
+
+static func _width_bins(n: Node, xf: Transform3D, bins: Dictionary, half_len: float) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh and (n as MeshInstance3D).visible:
+		var mesh := (n as MeshInstance3D).mesh
+		for si in mesh.get_surface_count():
+			var verts = mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var w: Vector3 = xf * v
+				if w.y < 0.08 or absf(w.z) > half_len:
+					continue
+				var k := int(floor(w.z / 0.25))
+				bins[k] = maxf(bins.get(k, 0.0), absf(w.x))
+	for ch in n.get_children():
+		if ch is Node3D:
+			_width_bins(ch, xf * (ch as Node3D).transform, bins, half_len)
 
 
 static func aabb_of(n: Node, xf: Transform3D) -> AABB:

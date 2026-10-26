@@ -34,7 +34,7 @@ static func make(model_index: int) -> CopCar:
 	c.add_child(body)
 	c.body = body
 	var he: Vector2 = body.get_meta("half_extents")
-	c.half_extents = Vector2(m[2] * 0.5, he.y)
+	c.half_extents = TrafficManager.collision_half_extents(m[2], body)
 	c.bar = LightBar.new()
 	c.bar.build(m[2] * 0.62)
 	# The models carry their own (unlit) bar on the roof: sit ours on top of it, a touch behind

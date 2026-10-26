@@ -25,3 +25,20 @@ static func has(name: String) -> bool:
 
 static func get_value(name: String, default = null):
 	return all().get(name, default)
+
+
+## Seed for one round: `--seed=N` pins it; proof runs (--autodrive / --capture) default to 7 so the
+## gate smoke and captures stay reproducible. Normal play draws a fresh one on every call, so each
+## restart (scene reload) gets new traffic, cops and hazards.
+static func round_seed() -> int:
+	return seed_from(all())
+
+
+static func seed_from(args: Dictionary) -> int:
+	if args.has("seed"):
+		return int(args["seed"])
+	if args.has("autodrive") or args.has("capture"):
+		return 7
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	return rng.randi() & 0x7FFFFFFF

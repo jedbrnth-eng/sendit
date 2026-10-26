@@ -10,9 +10,7 @@ class_name PlayerCar extends Node3D
 signal crashed(impact_kmh: float)
 signal scraped(strength: float)
 
-const MODEL := "res://assets/cars/concept/CarConcept.glb"
-const PAINT := Color(0.42, 0.95, 0.05)      # "Voltage" lime: fictional, loud at night
-const PAINT_2 := Color(0.02, 0.022, 0.026)  # gloss black roof and accents
+const MODEL := "res://assets/cars/voltage/voltage_gt.glb"  # hero (see CarCatalog for the garage)
 const SIGNATURE := Color(0.35, 0.9, 1.0)     # ice-blue front light blade
 
 @export var max_kmh := 310.0
@@ -40,29 +38,59 @@ var _headlights: Array[SpotLight3D] = []
 var _smoke: GPUParticles3D
 var _sparks: GPUParticles3D
 var _spark_t := 0.0
+## Garage vehicle (CarCatalog spec). Empty = CarCatalog.current_id() at _ready.
+var spec: Dictionary = {}
+var vehicle_id := ""
+var hood_offset := Vector3(0, 1.18, -1.05)  # hood/rider cam position in car space
+var cam_lift := 0.0                          # chase cam raised for tall vehicles
+var cam_scale := 1.0                         # chase cam distance scale (closer for the moped)
+var engine_pitch := 1.0
+var scrape_crash_kmh := 30.0                 # barrier impact that counts as a crash
+var crash_keep := 1.0                        # scales the speed kept through a crash
+var roll_gain := 0.045                       # < 0 leans into turns (bikes)
+var _rider: Node3D
+var _fx: CarStyleFx
+var _lift_from := 0.0                        # throttle held before a lift (backfire trigger)
 
 
 func _ready() -> void:
-	car = CarModel.build(MODEL, 4.55, 0.0, 0.0, PAINT)
+	if spec.is_empty():
+		spec = CarCatalog.spec(CarCatalog.current_id())
+	_apply_spec()
+	car = CarCatalog.build(vehicle_id)
 	body = car
 	add_child(car)
-	CarModel.paint_material(car, "Paint 2 Carmine", PAINT_2)
-	var plate := car.find_child("License Plate", true, false) as Node3D
-	if plate:
-		plate.visible = false
-	var rubber := StandardMaterial3D.new()  # plain sidewalls: the source tyres carry a real logo
-	rubber.albedo_color = Color(0.035, 0.035, 0.038)
-	rubber.roughness = 0.85
-	CarModel.replace_material(car, "Tireside", rubber)
-	var he: Vector2 = car.get_meta("half_extents")
-	half_extents = Vector2(minf(he.x, 1.0), he.y)  # mesh box includes the mirrors
-	_add_signature_lights()
+	# Garage loadout (paint, rims, lights, underglow, flames, plate, engine tone): visual/audio only.
+	var prof := ProfileStore.get_current()
+	CarStyle.apply(car, vehicle_id, CarStyle.with_overrides(prof.loadout(vehicle_id)), String(LaunchArgs.get_value("plate", prof.plate(vehicle_id))))
+	engine_pitch *= float(car.get_meta("engine_pitch", 1.0))
+	_fx = car.get_node_or_null("StyleFx") as CarStyleFx
+	half_extents = spec.hitbox  # mesh box includes mirrors/bars: collide on the body
+	_rider = car.find_child("Rider", true, false) as Node3D
+	print("PLAYER_CAR id=%s hitbox=%s max_kmh=%d" % [vehicle_id, half_extents, int(max_kmh)])
+	if spec.signature:
+		_add_signature_lights()
 	_add_headlights()
 	_smoke = _make_smoke()
 	add_child(_smoke)
 	_sparks = _make_sparks()
 	add_child(_sparks)
 	scraped.connect(_on_scraped)
+
+
+func _apply_spec() -> void:
+	vehicle_id = spec.id
+	max_kmh = spec.max_kmh
+	accel = spec.accel
+	steer_rate = spec.steer_rate
+	brake_decel = spec.brake_decel
+	scrape_crash_kmh = spec.scrape_crash_kmh
+	crash_keep = spec.crash_keep
+	roll_gain = spec.roll
+	hood_offset = spec.hood_cam
+	cam_lift = spec.cam_lift
+	cam_scale = spec.cam_scale
+	engine_pitch = spec.engine_pitch
 
 
 func kmh() -> float:
@@ -87,11 +115,14 @@ func _physics_process(delta: float) -> void:
 	_collide_edges()
 	rotation.y = yaw
 	# Body motion: roll into turns, squat/dive with throttle/brake, crash wobble (spring).
-	_roll = lerpf(_roll, steer_input * clampf(speed / 60.0, 0.0, 1.0) * 0.045, delta * 6.0)
+	# Cars roll out of a turn; a bike (roll_gain < 0) leans into it, its rider a little further.
+	_roll = lerpf(_roll, steer_input * clampf(speed / 60.0, 0.0, 1.0) * roll_gain, delta * (6.0 if roll_gain > 0.0 else 4.0))
 	_pitch = lerpf(_pitch, (brake - throttle * 0.4) * 0.025, delta * 5.0)
 	_wobble_v += (-_wobble * 90.0 - _wobble_v * 7.0) * delta
 	_wobble += _wobble_v * delta
 	body.rotation = Vector3(_pitch, _wobble, _roll - _wobble * 0.15)
+	if _rider:
+		_rider.rotation.z = -_roll * 0.35  # model space is turned 180 degrees: same lean direction
 	_update_fx(delta)
 
 
@@ -122,6 +153,13 @@ func _update_fx(delta: float) -> void:
 	_smoke.emitting = (brake > 0.55 and k > 50.0) or (stun > 0.45 and k > 20.0)
 	_spark_t -= delta
 	_sparks.emitting = _spark_t > 0.0
+	# Backfire: snapping off a held throttle at speed pops the exhaust flames.
+	if throttle > 0.6:
+		_lift_from = minf(_lift_from + delta, 1.0)
+	elif throttle < 0.15:
+		if _fx and _lift_from > 0.35 and k > 110.0:
+			_fx.pop(0.18 + 0.1 * _lift_from)
+		_lift_from = 0.0
 
 
 func _read_input() -> void:
@@ -149,7 +187,7 @@ func _collide_edges() -> void:
 		var hit_kmh := kmh() * sin(angle)
 		yaw *= -0.3
 		_sparks.position = Vector3(side * half_extents.x, 0.35, -half_extents.y * 0.3)
-		if hit_kmh > 30.0:
+		if hit_kmh > scrape_crash_kmh:
 			_crash(hit_kmh, 0.55, side)
 		else:
 			speed *= 0.985
@@ -167,7 +205,7 @@ func on_traffic_hit(rel_kmh: float, push_x: float, dz := 0.0) -> void:
 func _crash(impact_kmh: float, keep: float, side := 1.0, dz := 0.0) -> void:
 	if stun > 0.3:
 		return
-	speed *= keep
+	speed *= clampf(keep * crash_keep, 0.0, 0.9)
 	stun = 0.9
 	# Yaw kick away from the impact (a nose hit turns harder) + a violent visual twist.
 	var hard := clampf(impact_kmh / 120.0, 0.2, 1.0)
@@ -230,6 +268,8 @@ func _add_headlights() -> void:
 			p = (cl[key] as AABB).get_center() + Vector3(0, 0, -0.45)
 		var l := SpotLight3D.new()
 		l.light_color = Color(1.0, 0.95, 0.86)
+		if car.has_meta("head_color") and not (car.get_meta("head_color") as Color).is_equal_approx(CarModel.HEAD_COLOR):
+			l.light_color = (car.get_meta("head_color") as Color).lerp(Color.WHITE, 0.3)
 		l.light_energy = 22.0
 		l.spot_range = 95.0
 		l.spot_angle = 22.0
