@@ -3,3 +3,4 @@
 *.import.tmp
 .godot/
 .DS_Store
+__pycache__/

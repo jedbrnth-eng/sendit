@@ -3,12 +3,12 @@
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
 extends SceneTree
-## Visual contact proof (PR #14 QA finding 1): each drivable vehicle beside a real traffic sedan
+## Visual contact proof (from a QA pass): each drivable vehicle beside a real traffic sedan
 ## (built and sized the way TrafficManager spawns it), top-down and chase shots of
 ##   straight   box side clearance 0.03 m, no contact;
 ##   yaw_clear  turned 20 degrees and moved out until the oriented boxes are 0.03 m apart: the
 ##              closest legal yawed pass, no contact (bodies must not visibly overlap here);
-##   yaw_hit    Astra's fixture (straight 0.03 m, then turned 20 degrees): a contact, resolved.
+##   yaw_hit    the QA fixture (straight 0.03 m, then turned 20 degrees): a contact, resolved.
 ## usage: godot --path . --resolution 1920x1080 -s tools/probe_contact.gd -- --out=<dir> \
 ##          --settings-file=<tmp.cfg> --garage-file=<tmp.cfg>
 ## Run via tools/run_probe.py --expect "CONTACT_PROBE failed=0". Exits 1 on a failed check.
@@ -118,7 +118,7 @@ func run() -> void:
 		await shot("contact_%s_yaw_clear_top" % id)
 		chase(p)
 		await shot("contact_%s_yaw_clear" % id)
-		# 3. Astra's fixture: straight 0.03 m then turned 20 deg -> contact, resolved.
+		# 3. the QA fixture: straight 0.03 m then turned 20 deg -> contact, resolved.
 		p.position = base
 		p.rotation.y = 0.0
 		c.position = Vector3(base.x + p.half_extents.x + c.half_extents.x + 0.03, 0, 0)
@@ -127,7 +127,7 @@ func run() -> void:
 		p.yaw = p.rotation.y
 		var pre := TrafficManager.clearance(p, c)
 		t._contacts_and_gaps()
-		check(c.hit, "%s 20 deg at Astra's fixture (overlap %.3f m): contact" % [id, pre])
+		check(c.hit, "%s 20 deg at the QA fixture (overlap %.3f m): contact" % [id, pre])
 		check(TrafficManager.clearance(p, c) >= 0.0, "%s resolved out of the sedan (gap %.3f m, x %.2f)" % [id, TrafficManager.clearance(p, c), p.position.x])
 		c.knock_v = 0.0
 		c.knock_spin = 0.0

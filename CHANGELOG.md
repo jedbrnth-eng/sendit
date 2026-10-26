@@ -11,6 +11,7 @@ A garage, a reason to keep playing, a settings menu, four new cars and a hazardo
 - **Settings menu** (Esc on the title screen, or Settings in the pause menu): master, music and effects volume; a LOW / MEDIUM / HIGH quality preset or separate shadows, glow and draw distance; fullscreen; field of view; starting camera; keyboard rebinding; reset to defaults. Saved in `settings.cfg` and applied at start-up.
 - **Pause menu** (Esc or the pad's Back button during a run): resume, settings, restart, quit to title.
 - **Shoulder hazards:** cones, barrels, debris, signs, water barriers and broken-down cars on the hard shoulder. Hitting one is a wreck, like hitting traffic. Parked police avoid them.
+- `tools/film_hazard_crash.gd` films a scripted shoulder-hazard crash for the demo video; `tools/wheel_sheet.tscn` now includes the garage cars.
 - Launch arguments for testing and captures: `--car=<id>`, `--screen=select`, `--menu=settings|pause`, `--settings-file`, `--garage-file`, `--profile-file`, `--loadout`, `--plate`, `--windowed`.
 
 ### Changed
@@ -24,6 +25,7 @@ A garage, a reason to keep playing, a settings menu, four new cars and a hazardo
 ### Fixed
 - After hitting a car you could drive on through it at its speed (the hit only counted once). Struck cars now stay solid.
 - Gap points could be farmed: driving on the shoulder no longer scores gaps, and each car pays for a limited number of passes (a chasing police car re-arms).
+- A run that quit right after a gap (capture and proof runs) could print a script error: the world now stops before the audio is freed.
 
 
 ## [0.1.0] - 2026-10-23

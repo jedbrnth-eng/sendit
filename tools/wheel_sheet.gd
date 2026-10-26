@@ -3,7 +3,8 @@
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
 extends Node3D
-## Rear three-quarter view of every traffic model, one PNG each, to check the tyres by eye.
+## Rear three-quarter view of every traffic model and every garage car, one PNG each, to check the
+## tyres by eye (and to build docs/fleet.jpg).
 ## usage: godot --path . res://tools/wheel_sheet.tscn -- --out=/some/dir [--spin=0.7]
 
 var cam: Camera3D
@@ -28,7 +29,9 @@ func _ready() -> void:
 	add_child(h)
 	h.update_stream(0.0)
 	_models = TrafficManager.MODELS.duplicate()
-	_models.append([PlayerCar.MODEL, 4.6, 2.0, 1, 1.0, 0, false])
+	for id in CarCatalog.ids():  # garage cars, built with their own finish (entry[7] = catalog id)
+		var spec := CarCatalog.spec(id)
+		_models.append([spec.model, spec.length, 2.0, 1, 1.0, 0, false, id])
 	cam = Camera3D.new()
 	cam.fov = 50
 	add_child(cam)
@@ -45,7 +48,10 @@ func _next() -> void:
 		get_tree().quit()
 		return
 	var m: Array = _models[_i]
-	_body = CarModel.build(m[0], m[1], 0.0, 0.0, Color(0.55, 0.57, 0.6) if m[6] else Color(0, 0, 0, 0))
+	if m.size() > 7:
+		_body = CarCatalog.build(m[7])
+	else:
+		_body = CarModel.build(m[0], m[1], 0.0, 0.0, Color(0.55, 0.57, 0.6) if m[6] else Color(0, 0, 0, 0))
 	_body.position = Vector3(RoadSpec.lane_x(1), 0, -30.0)
 	add_child(_body)
 	_body.spin = float(get_meta("spin"))

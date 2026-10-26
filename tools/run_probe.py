@@ -5,8 +5,8 @@
 
 """Run a Godot probe and judge it on more than its exit code.
 
-Godot exits 0 even when a probe script fails to parse (finding 4 of the PR #14 QA), and a probe
-waiting on a state that never comes just hangs (finding 3). This wrapper fails the run on:
+Godot exits 0 even when a probe script fails to parse (found in QA), and a probe
+waiting on a state that never comes just hangs. This wrapper fails the run on:
   - wall-clock timeout (exit 124),
   - a nonzero Godot exit code,
   - any SCRIPT ERROR / Parse Error / ERROR / USER ERROR line,

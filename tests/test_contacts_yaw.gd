@@ -3,7 +3,7 @@
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
 extends RefCounted
-## Yaw-aware contact (QA PR #14 findings 1 + 2). Regressions built from Astra's fixtures:
+## Yaw-aware contact (regressions from a QA pass). Fixtures:
 ## - a player turned 20 degrees beside a sedan (0.03 m box clearance straight) must register a hit
 ##   and be pushed out: a no-hit result must never coexist with the rotated body inside the car;
 ## - two struck cars 1.8 m either side of the player (a pinch too narrow to fit) must converge to
@@ -83,7 +83,7 @@ func test_yawed_close_pass_is_contact_for_every_vehicle() -> void:
 			t.cars.append(c)
 			t._contacts_and_gaps()
 			runner.check(not c.hit, "%s straight, 0.03 m clear: no contact" % id)
-			# Steer the nose away from the car: the tail swings into it (Astra's 20 degree fixture).
+			# Steer the nose away from the car: the tail swings into it (the QA 20 degree fixture).
 			p.rotation.y = deg_to_rad(20.0) * side
 			p.yaw = p.rotation.y
 			var inside := overlaps(p, c)
@@ -113,7 +113,7 @@ func test_yawed_traffic_car_is_solid_too() -> void:
 
 
 func test_pinched_between_two_struck_cars_converges() -> void:
-	# Astra's QA_CONTACT paired fixture: x alternated 6.99 <-> 7.31 with one car always penetrated.
+	# The QA paired fixture: x alternated 6.99 <-> 7.31 with one car always penetrated.
 	var t := TrafficManager.new()
 	var p := PlayerCar.new()
 	p.position = Vector3(RoadSpec.lane_x(1), 0, 0)

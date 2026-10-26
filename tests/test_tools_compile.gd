@@ -5,7 +5,7 @@
 extends RefCounted
 ## Every verification tool script must still compile against the current game code: a stale
 ## constant (PlayerCar.PAINT after the garage moved models into CarCatalog) made the hazard probe
-## fail to load while Godot still exited 0 (PR #14 QA finding 4).
+## fail to load while Godot still exited 0 (found in QA).
 
 var runner
 

@@ -384,6 +384,11 @@ func _finish(exit_code := 0) -> void:
 	police.print_stats()
 	police.release()  # police hook: sirens off before quit
 	set_physics_process(false)
+	# Freeze the world too: traffic kept stepping for the frames below and a gap it reported then
+	# reached the freed audio node (SCRIPT ERROR on quit).
+	for n in [player, traffic, hazards, police]:
+		if n:
+			n.process_mode = Node.PROCESS_MODE_DISABLED
 	audio.shutdown()
 	CarModel.release()
 	audio.queue_free()
