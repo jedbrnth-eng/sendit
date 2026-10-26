@@ -39,6 +39,25 @@ func test_rest_steer_detects_turned_wheel() -> void:
 	runner.check(CarModel.rest_steer(Basis(Vector3.UP, PI), size) == 0.0, "flipped wheel")
 
 
+func test_rest_steer_ignores_a_paired_axle_mesh() -> void:
+	# One mesh holding both tyres of an axle: long along X, round (d x d) in Y/Z. It sits straight;
+	# reading its thin Y/Z "axle" turned it 90 degrees and left a lone tyre poking out of the body.
+	var pair := Vector3(1.57, 0.52, 0.52)
+	runner.check(CarModel.rest_steer(Basis(), pair) == 0.0, "straight axle pair")
+	runner.check(CarModel.rest_steer(Basis(Vector3.RIGHT, 2.0), pair) == 0.0, "spun axle pair")
+	runner.check(is_equal_approx(CarModel.rest_steer(Basis(Vector3.UP, deg_to_rad(20)), pair), deg_to_rad(20)), "turned axle pair still reads its yaw")
+
+
+func test_traffic_axle_pairs_are_not_turned_at_rest() -> void:
+	for f in ["res://assets/traffic/quaternius_pp/Truck_cXw6oiFtZ8.glb", "res://assets/traffic/quaternius_pp/Car_Cz6yDaUcM9.glb"]:
+		var car: CarBody = CarModel.build(f, 5.0)
+		for i in car.wheels.size():
+			var yaw := absf(car.wheel_rest[i].get_euler().y)
+			runner.check(yaw < deg_to_rad(5.0) or absf(yaw - PI) < deg_to_rad(5.0), "%s %s rest yaw %.1f deg" % [f.get_file(), car.wheels[i].name, rad_to_deg(yaw)])
+		car.free()
+	CarModel.release()
+
+
 func test_white_glass_is_replaced_only_when_opaque_white() -> void:
 	runner.check(CarModel.is_white_glass("Glass", Color.WHITE, BaseMaterial3D.TRANSPARENCY_DISABLED), "concept glass")
 	runner.check(not CarModel.is_white_glass("windows", Color(0.1, 0.1, 0.12), 0), "dark windows stay")

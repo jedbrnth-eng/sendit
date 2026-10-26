@@ -7,6 +7,10 @@ class_name ChaseCamera extends Camera3D
 ## and a hood cam toggle ("camera" action). Proof shots: launch arg --cam=rear|front|side|wheel
 ## parks the camera close to the player car.
 
+## Settings: degrees added to the speed-widened FOV, and whether runs start in the hood cam.
+static var fov_offset := 0.0
+static var start_hood := false
+
 var target: PlayerCar
 var shake := 0.0
 var hood := false
@@ -35,6 +39,7 @@ func _ready() -> void:
 	far = 4000.0
 	_noise.frequency = 3.0
 	proof = String(LaunchArgs.get_value("cam", ""))
+	hood = start_hood
 	if proof == "hood":
 		hood = true  # proof shot of the in-car view the "camera" action toggles
 
@@ -56,7 +61,7 @@ func _process(delta: float) -> void:
 		return
 	var kmh := target.kmh()
 	var sp := clampf(kmh / 280.0, 0.0, 1.0)
-	fov = lerpf(fov, lerpf(62.0, 84.0, sp * sp), delta * 3.0)
+	fov = lerpf(fov, lerpf(62.0, 84.0, sp * sp) + fov_offset, delta * 3.0)
 	# Physics runs at 120 Hz, rendering at the display rate: follow the *interpolated* car or it
 	# judders against the camera (the "laggy, shaky" steering players reported).
 	var xf := target.get_global_transform_interpolated()
@@ -69,14 +74,14 @@ func _process(delta: float) -> void:
 	var look: Vector3
 	cull_mask = (0xFFFFF & ~2) if hood else 0xFFFFF  # layer 2 = hero DRL blades
 	if hood:
-		want = tp + xf.basis * Vector3(0, 1.18, -1.05)  # NFS-style hood cam (the old in-cabin view showed a flat red interior)
+		want = tp + xf.basis * target.hood_offset  # NFS-style hood cam (rider's eye on the moped) (the old in-cabin view showed a flat red interior)
 		look = want + xf.basis * Vector3(0, -0.02, -10)
 	else:
-		var back := lerpf(6.4, 7.6, sp)
-		var up := lerpf(2.0, 1.75, sp)
+		var back := lerpf(6.4, 7.6, sp) * target.cam_scale
+		var up := lerpf(2.0, 1.75, sp) * lerpf(1.0, target.cam_scale, 0.6) + target.cam_lift
 		want = tp + Vector3(0, up, 0) - heading * back
 		# Look a touch into the turn so lane darts read without the horizon swinging.
-		look = tp + Vector3(0, 1.0, 0) + heading * 12.0 + Vector3(_steer * sp * 0.5, 0, 0)
+		look = tp + Vector3(0, 1.0 + target.cam_lift * 0.5, 0) + heading * 12.0 + Vector3(_steer * sp * 0.5, 0, 0)
 	var p := global_position
 	p.x = lerpf(p.x, want.x, delta * (30.0 if hood else 7.0))
 	p.y = lerpf(p.y, want.y, delta * 10.0)

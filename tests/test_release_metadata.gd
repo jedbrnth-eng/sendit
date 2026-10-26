@@ -116,3 +116,19 @@ func test_credits_flags_nothing_unallowed_in_asset_names() -> void:
 		for f in d.get_files():
 			for b in banned:
 				runner.check(not _has_word(f.to_lower(), b), "no brand '%s' in %s/%s" % [b, p, f])
+
+
+func test_export_presets_carry_the_version() -> void:
+	# The macOS bundle and Windows exe show these numbers; they must follow VERSION on every bump.
+	var v := _read("res://VERSION").strip_edges()
+	var presets := _read("res://export_presets.cfg")
+	runner.check(presets.contains("application/short_version=\"%s\"" % v), "macOS short_version is " + v)
+	runner.check(presets.contains("application/version=\"%s\"" % v), "macOS version is " + v)
+	runner.check(presets.contains("application/file_version=\"%s.0\"" % v), "Windows file_version is %s.0" % v)
+	runner.check(presets.contains("application/product_version=\"%s.0\"" % v), "Windows product_version is %s.0" % v)
+
+
+func test_changelog_has_a_section_for_the_version() -> void:
+	# The Release workflow copies this section into the release notes.
+	var v := _read("res://VERSION").strip_edges()
+	runner.check(_read("res://CHANGELOG.md").contains("\n## [%s] - " % v), "CHANGELOG.md has a '## [%s] - <date>' section" % v)

@@ -123,8 +123,7 @@ func _spawn(z: float) -> void:
 	var body := CarModel.build(m[0], m[1], 0.0, 0.0, paint)
 	car.add_child(body)
 	car.body = body
-	var he: Vector2 = body.get_meta("half_extents")
-	car.half_extents = Vector2(m[2] * 0.5, he.y)  # mirrors widen the mesh box; collide on the body
+	car.half_extents = collision_half_extents(m[2], body)
 	car.position = Vector3(x, 0, z)
 	if oncoming:
 		car.rotation.y = PI
@@ -132,6 +131,14 @@ func _spawn(z: float) -> void:
 	# Physics interpolation: start from the spawn point, not a streak from the origin.
 	car.reset_physics_interpolation()
 	cars.append(car)
+
+
+## Collision box of a traffic model: its body (mirrors widen the mesh box, so not the mesh box),
+## never narrower than the table width, so a body cannot sit visibly inside the player.
+static func collision_half_extents(table_width: float, body: CarBody) -> Vector2:
+	var he: Vector2 = body.get_meta("half_extents")
+	var bw: float = body.get_meta("body_half_width", table_width * 0.5)
+	return Vector2(maxf(table_width * 0.5, bw), he.y)
 
 
 ## Police hook: add an externally built car to traffic (it then gets traffic following, player
@@ -255,20 +262,26 @@ func _recycle() -> void:
 		_spawn(pz - rng.randf_range(ahead * 0.75, ahead))
 
 
+## Contact and gap detection on oriented boxes (the player and traffic both yaw): a turned body
+## whose corner is in a car is a hit even when the axis-aligned boxes miss. For straight cars the
+## clearance is exactly the old side gap (|dx| - half widths), so gap scoring is unchanged.
 func _contacts_and_gaps() -> void:
-	var pp := player.position
-	var ph := player.half_extents
+	var p_ext := world_extent(player.half_extents, player.rotation.y)
+	var touching := false
 	for c in cars:
-		var dz := c.position.z - pp.z
-		var long_sum := c.half_extents.y + ph.y
-		var dx := c.position.x - pp.x
-		var side_clear := absf(dx) - c.half_extents.x - ph.x
-		var overlapping_z := absf(dz) < long_sum
+		var dz := c.position.z - player.position.z
+		var dx := c.position.x - player.position.x
+		var c_ext := world_extent(c.half_extents, c.rotation.y)
+		# Any overlap of the oriented boxes also overlaps their world-z shadows, so this window
+		# never misses a contact; with no yaw it is the old |dz| < half lengths.
+		var overlapping_z := absf(dz) < c_ext.y + p_ext.y
 		if overlapping_z:
-			if side_clear < 0.0 and not c.hit:
+			var clear := clearance(player, c)
+			if clear < 0.0 and not c.hit:
 				c.hit = true
 				var rel := (player.speed - c.speed * (-c.dir())) * 3.6
-				var push := -signf(dx) * minf(0.6, -side_clear + 0.05)
+				var lat_clear := absf(dx) - c_ext.x - p_ext.x
+				var push := -signf(dx) * clampf(-lat_clear + 0.05, 0.05, 0.6)
 				player.on_traffic_hit(rel, push, dz)
 				# Knock the car away from the player and spin it by where it was struck.
 				var hard := clampf(absf(rel) / 120.0, 0.25, 1.0)
@@ -277,8 +290,11 @@ func _contacts_and_gaps() -> void:
 				c.speed *= 0.6
 				c.brake_lvl = 1.0
 				hit.emit(c, rel)
+			# Cars stay solid after the hit (the one-shot latch only stops a second wreck):
+			# no riding through a struck car at its speed, stunned or not. Resolved below.
+			touching = touching or clear < 0.0
 			c.alongside = true
-			c.min_clear = minf(c.min_clear, side_clear)
+			c.min_clear = minf(c.min_clear, clear)
 		elif c.alongside:
 			c.alongside = false
 			# Left the overlap window. Count it if the player went past (same-dir) or met it (oncoming).
@@ -288,6 +304,96 @@ func _contacts_and_gaps() -> void:
 				var side := int(signf(dx))
 				gap.emit(c.min_clear, side, c.oncoming, c)
 			c.min_clear = INF
+	if touching:
+		resolve(player, cars)
+
+
+## Half extents of a yawed box's world-axis shadow (x, z).
+static func world_extent(he: Vector2, yaw: float) -> Vector2:
+	var cs := absf(cos(yaw))
+	var sn := absf(sin(yaw))
+	return Vector2(he.x * cs + he.y * sn, he.x * sn + he.y * cs)
+
+
+## Signed gap between the player and a car box (negative = overlap depth on the best axis).
+static func clearance(p: PlayerCar, c: TrafficCar) -> float:
+	return obb_sat(p.position, p.half_extents, p.rotation.y, c.position, c.half_extents, c.rotation.y).z
+
+
+## Separating-axis test of two boxes on the ground plane (centre, half extents x/z, yaw).
+## Returns (mx, mz, gap): gap = largest separation over the four edge normals (negative = depth
+## of the shallowest overlap), (mx, mz) = unit direction to move A out of B along that axis.
+## With no yaw on either box this is the old axis-aligned test (x preferred on a tie).
+static func obb_sat(a_pos: Vector3, a_he: Vector2, a_yaw: float, b_pos: Vector3, b_he: Vector2, b_yaw: float) -> Vector3:
+	var d := Vector2(b_pos.x - a_pos.x, b_pos.z - a_pos.z)
+	var ax := [Vector2(cos(a_yaw), -sin(a_yaw)), Vector2(sin(a_yaw), cos(a_yaw)),
+		Vector2(cos(b_yaw), -sin(b_yaw)), Vector2(sin(b_yaw), cos(b_yaw))]
+	var ar := [ax[0], ax[1]]
+	var br := [ax[2], ax[3]]
+	var best := -INF
+	var dir := Vector2.RIGHT
+	for n: Vector2 in ax:
+		var ra := a_he.x * absf(ar[0].dot(n)) + a_he.y * absf(ar[1].dot(n))
+		var rb := b_he.x * absf(br[0].dot(n)) + b_he.y * absf(br[1].dot(n))
+		var dn := d.dot(n)
+		var g := absf(dn) - ra - rb
+		if g > best + 1e-6:
+			best = g
+			dir = -n * (signf(dn) if dn != 0.0 else 1.0)
+	return Vector3(dir.x, dir.y, best)
+
+
+## Push the player out of every car it overlaps. Each pass re-reads the current geometry, so a
+## push into a second car is seen and undone; a bounded number of passes. A pinch too narrow to
+## fit (no position between the cars is free) falls back to backing the player out behind the
+## cars it is wedged in, at no more than their speed: never a free pass forward.
+const RESOLVE_PASSES := 6
+
+static func resolve(p: PlayerCar, list: Array) -> void:
+	for i in RESOLVE_PASSES:
+		var moved := false
+		for c in list:
+			if absf(c.position.z - p.position.z) > c.half_extents.length() + p.half_extents.length():
+				continue  # bounding circles apart: cannot touch
+			if push_out(p, c.position, c.half_extents, c.speed * -c.dir(), c.rotation.y):
+				moved = true
+		if not moved:
+			return
+	# Still inside something after the passes: wedged. Back out behind every car in the way.
+	var p_ext := world_extent(p.half_extents, p.rotation.y)
+	for guard in list.size() + 1:
+		var back := -INF
+		for c in list:
+			if clearance(p, c) < 0.0:
+				back = maxf(back, c.position.z + world_extent(c.half_extents, c.rotation.y).y + p_ext.y + 0.01)
+				p.speed = clampf(c.speed * -c.dir(), 0.0, p.speed)
+		if back == -INF:
+			return
+		p.position.z = maxf(p.position.z, back)
+
+
+## Push the player out of a car box along the shallowest axis. Nose/tail overlaps put the player
+## back behind (or ahead of) the car and match its speed; side overlaps push sideways.
+static func separate(p: PlayerCar, c: TrafficCar) -> void:
+	push_out(p, c.position, c.half_extents, c.speed * -c.dir(), c.rotation.y)
+
+
+## Same for any box: centre, half extents (x, z), its speed toward -Z (0 for static things) and its
+## yaw. The player's own yaw counts. Returns true when it had to move the player.
+static func push_out(p: PlayerCar, center: Vector3, he: Vector2, fwd_speed: float, yaw := 0.0) -> bool:
+	var r := obb_sat(p.position, p.half_extents, p.rotation.y, center, he, yaw)
+	if r.z >= 0.0:
+		return false
+	var ahead := center.z < p.position.z
+	var depth := -r.z + 0.01
+	p.position.x += r.x * depth
+	p.position.z += r.y * depth
+	if absf(r.y) > absf(r.x):
+		if ahead:  # box ahead: we are in its boot
+			p.speed = clampf(fwd_speed, 0.0, p.speed)
+		else:  # box behind ran into us
+			p.speed = maxf(p.speed, fwd_speed)
+	return true
 
 
 ## True when this pass and the previous one happened together on opposite sides (threading).

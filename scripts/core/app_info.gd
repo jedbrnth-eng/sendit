@@ -7,7 +7,7 @@ class_name AppInfo extends RefCounted
 ## project.godot (tests/test_release_metadata.gd keeps the two equal).
 
 const CC_BY_CREDITS: Array[String] = [
-	"Car model \"CarConcept\" by Eric Chadwick, \u00a9 2024 Darmstadt Graphics Group GmbH, CC BY 4.0",
+	"Voltage GT is modified from the car model \"CarConcept\" by Eric Chadwick, \u00a9 2024 Darmstadt Graphics Group GmbH, CC BY 4.0",
 ]
 
 

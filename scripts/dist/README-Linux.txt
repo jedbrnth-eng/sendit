@@ -6,7 +6,7 @@ SendIt - night highway traffic racer
     ./SendIt.x86_64
 
 Controls: W/S throttle and brake, A/D steer, C camera, R restart,
-          F11 fullscreen, Esc title screen. Gamepads work too.
+          F11 fullscreen, Esc pause and settings. Gamepads work too.
 
 Needs 64-bit Linux (x86_64) with Vulkan 1.2 graphics drivers.
 Project page: https://github.com/jedbrnth-eng/sendit

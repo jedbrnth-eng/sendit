@@ -9,7 +9,7 @@ Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT
 godot --path .                        # play
 godot --path . -- --autodrive         # let the autopilot drive (attract mode, useful for profiling)
 ```
-Launch arguments go after `--`: `--screen=title|run|results|drive`, `--seed=<n>`, `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`, `--cam=hood|rear|side|front|wheel` (camera proof shots), `--no-hud` (clean promo frames). They are parsed in `scripts/core/boot.gd`.
+Launch arguments go after `--`: `--screen=title|select|run|results|drive`, `--car=<id>` (voltage, naga, kaze, kaiju, rotor), `--seed=<n>` (default: a fresh seed every round), `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`, `--cam=hood|rear|side|front|wheel` (camera proof shots), `--no-hud` (clean promo frames), `--menu=settings|pause`, `--garage-tab=<TAB>` (with `--garage-row`, `--garage-step`), `--loadout=<item ids>`, `--plate=<text>`, `--windowed`. `--settings-file`, `--garage-file`, `--profile-file` and `--best-file` point the save files somewhere else, so probes and captures never touch your own progress. They are parsed in `scripts/core/boot.gd` and `scripts/core/launch_args.gd`.
 
 ## Test
 ```
@@ -21,8 +21,9 @@ For anything visual, look at a frame from the real renderer, not just a passing 
 ```
 tools/capture.sh /tmp/before 300,900 7        # PNGs at physics frames 300 and 900, seed 7
 tools/capture.sh /tmp/after  300,900 7        # then compare the same seed and frames
-godot --path . res://tools/wheel_sheet.tscn -- --out=/tmp/wheels   # rear view of every traffic model
+godot --path . res://tools/wheel_sheet.tscn -- --out=/tmp/wheels   # rear view of every traffic model and garage car
 ```
+Gameplay probes live in `tools/probe_*.gd`; run them through `tools/run_probe.py`, which fails on a timeout, a script error or a missing completion marker (each probe's header has its command line). `tools/film_hazard_crash.gd` films a scripted shoulder-hazard crash for the demo video.
 
 ## Layout
 ```
@@ -31,10 +32,11 @@ scripts/world/     highway streaming, night environment, sky, procedural city to
 scripts/vehicle/   player car, camera, CarModel (normalises any GLB: scale, ground, lamps, wheels), autopilot
 scripts/traffic/   traffic manager (IDM following, lane changes), traffic cars
 scripts/police/    patrols, chase brain, pursuit state, light bars
-scripts/score/     gap scorer, run session, personal best
-scripts/ui/        title, HUD, results, speedometer, logo
+scripts/score/     gap scorer, pass rules, run session, personal best
+scripts/progress/  XP curve, run rewards, unlock catalog, goals, profile and its save file, plate text filter
+scripts/ui/        title, car select / garage, settings and pause menus, HUD, results, speedometer, logo
 scripts/audio/     engine model, car audio, mixer
-tests/             unit tests     tools/   capture, gate, probes, asset scripts
+tests/             unit tests     tools/   capture, gate, probes, asset scripts, Blender car generators (tools/blender)
 ```
 Scenes are built in code so changes show up in diffs. Use the constants in `road_spec.gd` instead of hard-coding lane positions.
 

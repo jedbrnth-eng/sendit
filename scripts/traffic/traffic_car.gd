@@ -13,6 +13,7 @@ var half_extents := Vector2(0.9, 2.2)
 var target_x := 0.0
 var lane_change_cd := 0.0
 var passed := false        # player has passed this car (for scoring)
+var paid := 0              # passes of this car that scored (PassRules caps it)
 var min_clear := INF       # closest side clearance while alongside the player
 var alongside := false
 var hit := false

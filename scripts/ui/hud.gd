@@ -161,7 +161,7 @@ func _ready() -> void:
 	mark.text = "SEND IT"
 	_place(mark, Control.PRESET_BOTTOM_LEFT, 64, -96, 400, 44)
 	_hint = _label(_root, _body_font, 20, Color(1, 1, 1, 0.7))
-	_hint.text = "W/S  throttle · brake      A/D  steer      C  camera      R  restart      ESC  title"
+	_hint.text = "W/S  throttle · brake      A/D  steer      C  camera      R  restart      ESC  pause"
 	_place(_hint, Control.PRESET_BOTTOM_LEFT, 66, -56, 1100, 32)
 
 
