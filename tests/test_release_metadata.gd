@@ -106,7 +106,7 @@ func test_brand_matcher_is_word_aware() -> void:
 
 func test_credits_flags_nothing_unallowed_in_asset_names() -> void:
 	# Near-miss: no real car marques in shipped file names (fictional brands only).
-	var banned := ["ferrari", "lamborghini", "porsche", "bmw", "mercedes", "audi", "toyota", "honda", "nissan", "tesla", "bugatti", "mclaren"]
+	var banned := ["ferrari", "lamborghini", "porsche", "bmw", "mercedes", "audi", "toyota", "honda", "nissan", "tesla", "bugatti", "mclaren", "mazda", "isuzu", "subaru", "mitsubishi"]
 	var stack := ["res://assets"]
 	while not stack.is_empty():
 		var p: String = stack.pop_back()
@@ -132,3 +132,18 @@ func test_changelog_has_a_section_for_the_version() -> void:
 	# The Release workflow copies this section into the release notes.
 	var v := _read("res://VERSION").strip_edges()
 	runner.check(_read("res://CHANGELOG.md").contains("\n## [%s] - " % v), "CHANGELOG.md has a '## [%s] - <date>' section" % v)
+
+
+func test_meshy_assets_are_credited_as_meshy_not_cc0() -> void:
+	# Meshy Pro output is owned by the customer and released here under GPL-3.0, never as CC0.
+	var meshy := ["assets/cars/naga_xr", "assets/cars/kaze", "assets/cars/kaiju", "assets/traffic/police_meshy", "assets/props"]
+	var lines := _read("res://CREDITS.md").split("\n")
+	for path in meshy:
+		var row := ""
+		for line in lines:
+			var cols := line.split("|")
+			if cols.size() >= 5 and cols[2].strip_edges() == path:
+				row = line
+		runner.check(row != "", "CREDITS.md has a row for " + path)
+		runner.check(row.contains("Generated with Meshy") and row.contains("Pro plan"), "%s row says it is Meshy Pro output" % path)
+		runner.check(not row.split("|")[3].contains("CC0"), "%s is not claimed as CC0" % path)

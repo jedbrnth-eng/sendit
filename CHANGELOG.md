@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0] - 2026-10-27
+
+Mirrors, a replay of your best gaps, a new pickup, rebuilt cars and a Thai roadside.
+
+### Added
+- **Mirrors:** a rear-view mirror (top centre, bigger in the hood cam) and two side mirrors, flipped like real mirrors. A lit police car behind you makes the mirror frame flash red and blue. `M` cycles OFF, REAR and ALL during a run; Settings has **Mirrors** and **Mirror Size**. Only one mirror view is drawn per frame (with all three on, the rear-view updates every second frame and each side mirror every fourth).
+- **Replay cam:** when a round ends, the game replays up to four of your best gaps from trackside cameras with a slow-motion moment, letterbox bars and a caption (points, clearance, speed, SPLIT). Any of `Enter`, `Space`, `Esc` or the pad's **A** skips it. Press `R` (pad **X**) on the results screen to watch it again. Settings has a **Replay** on/off switch.
+- **Naga XR**, a new widebody street pickup with a full printed wrap that can be repainted. It unlocks at level 20 for 10,000 credits.
+- **Thai roadside:** palms, bus shelters, motorbike-taxi stands, spirit-house shrines, food stalls, parked tuk-tuks, neon shop signs in Thai and English, bare expressway piers and lane-signal gantries beyond the barriers. It is visual only and doesn't affect collisions.
+- **Police variants:** from heat 3 an interceptor SUV joins the chase, and from heat 4 a pursuit coupe. Both are fictional, with no badges. The low-heat fleet is unchanged.
+- `tools/meshy/`: the scripts that turned Meshy output into game assets (orient, scale, cut and rebuild the wheels, decimate, rebake, paint out lettering, build materials). They read the API key from a file outside the repository and never store it.
+- `tools/perf.sh` (frame cost on the real renderer, vsync off), `tools/probe_mirrors`, `tools/probe_roadside`, `tools/probe_police_variants` and `tools/make_maxed_profile.gd` (a level-50 test profile). Launch arguments: `--mirrors=off|rear|all`, `--replay-at-end`, `--replay-test`.
+
+### Changed
+- **Kaze RT and Kaiju R have new models**, made with Meshy and cleaned up for the game. Their handling, unlock level and garage id are unchanged, so saved garages still work. The Kaiju R's hitbox is 2 cm narrower (1.18 m) to match the new body. The old Blender generators are still in `tools/blender/`.
+- **Shoulder hazards have new models** (two kinds of cone, drum barrel, tyre, crate, pallet, plank pile, ladder, water barrier, Jersey barrier, chevron A-frame, warning triangle and a broken-down sedan). Their collision boxes and the seeded layout are unchanged.
+- The HUD combo cluster moves down below the rear-view mirror when the mirror is shown.
+- Performance: small roadside and hazard props are not drawn beyond 350 to 500 m (they were a few pixels there but still a draw call each), repeated neon-sign parts share one mesh, and the replay recorder caches each car's model key instead of rebuilding it for every car on every sample. Measured on an M4 Max at 1080p, 0.3.0 with all mirrors runs at about 9.1 ms a frame, against 8.3 ms for 0.2.0 (see the README).
+- The `PERF` line now counts frames over 25 ms and 50 ms, and `tools/wheel_sheet.tscn` includes the new police cars.
+- The new assets are Meshy Pro output, owned by the project owner and released under the repository's GPL-3.0. They are listed as such in CREDITS.md (not CC0).
+
+### Fixed
+- Short freezes (66 to 70 ms) in long pursuits: the first build of each new police car took about 100 ms, and the first load of each prop 10 to 60 ms. Both are now done when the round starts.
+- `tools/wheel_sheet.tscn` printed script errors after its last model while quitting.
+
 ## [0.2.0] - 2026-10-26
 
 A garage, a reason to keep playing, a settings menu, four new cars and a hazardous hard shoulder.

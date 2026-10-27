@@ -55,6 +55,7 @@ func setup(t: TrafficManager, p: PlayerCar, s: RunSession, seed_value: int) -> v
 		_force_at = 90 if v == "true" else int(v)
 	tune = PoliceTuning.at(PoliceTuning.difficulty(dist_offset, 1))
 	_next_patrol_m = dist_offset + 250.0
+	warm_models()
 	traffic.hit.connect(_on_hit)
 	pursuit.started.connect(_on_started)
 	pursuit.escaped.connect(_on_escaped)
@@ -64,6 +65,14 @@ func setup(t: TrafficManager, p: PlayerCar, s: RunSession, seed_value: int) -> v
 	for i in 8:
 		if _spawn_patrol(player.position.z - rng.randf_range(260.0, 360.0)) != null:
 			break
+
+
+## Build every heat-gated model once at round start (CarModel caches the scene, the wheel rig and
+## the ground fit). The first build of a Meshy unit took ~100 ms, so the first heat-3 or heat-4
+## spawn used to freeze the pursuit for several frames.
+static func warm_models() -> void:
+	for m in PoliceFleet.MODELS:
+		CarModel.build(m[0], m[1]).free()
 
 
 func distance_m() -> float:
@@ -170,7 +179,7 @@ func _spawn_patrol(z: float) -> CopCar:
 
 func _make_cop() -> CopCar:
 	_model_i += 1
-	return CopCar.make(_model_i)
+	return CopCar.make(_model_i, pursuit.heat)
 
 
 ## Backup arrives from behind, out of sight at first, at pursuit speed.

@@ -27,6 +27,15 @@ const CAR_MODELS := [
 const CAR_PAINTS := [Color(0.9, 0.9, 0.88), Color(0.22, 0.23, 0.25), Color(0.45, 0.03, 0.03),
 	Color(0.04, 0.08, 0.22), Color(0.55, 0.57, 0.6)]
 const AMBER := Color(1.0, 0.55, 0.08)
+## Meshy prop visuals per layout model (PropKit, tools/meshy/props.py). Visual only: collision stays
+## the layout's `he`, and the variant is picked from the item's position (prop_for), never from the
+## layout RNG, so every seed's hazard layout is exactly what it was before the pack.
+const PROPS := {"cone": ["cone_a", "cone_b"], "barrel": ["barrel"], "tyre": ["tyre"], "crate": ["crate", "pallet"],
+	"plank": ["plank", "ladder"], "aframe": ["aframe"], "triangle": ["triangle"], "water": ["water", "jersey"]}
+## CAR_MODELS indices (4.8 m sedans) shown as the Meshy broken-down hulk instead of a traffic model.
+const HULK_CARS := [0, 2]
+## Visibility range of the small Meshy hazard props (m from the camera).
+const PROP_VIS_END := 400.0
 
 var player: PlayerCar
 var seed_value := 7
@@ -154,6 +163,17 @@ static func layout(index: int, seed_v: int) -> Array:
 	return out
 
 
+## Meshy prop id shown for a layout item ("" = keep the built-in visual). Pure function of the item.
+static func prop_for(h: Dictionary) -> String:
+	var m := String(h.model)
+	if m.begins_with("car"):
+		return "hulk" if int(m.trim_prefix("car").split(".")[0]) in HULK_CARS else ""
+	var ids: Array = PROPS.get(m, [])
+	if ids.is_empty():
+		return ""
+	return ids[posmod(hash(Vector2i(roundi(float(h.x) * 10.0), roundi(float(h.z) * 10.0))), ids.size())]
+
+
 ## True when nothing sits on the shoulder within `half_len` m of z (e.g. a parked cop's spot).
 static func is_free(z: float, half_len: float, seed_v: int) -> bool:
 	var s0 := int(floor(-z / SLOT_M))
@@ -172,6 +192,7 @@ func setup(p: PlayerCar, seed_v: int) -> void:
 
 
 func _ready() -> void:
+	PropKit.warm()  # load every Meshy prop now, not when a type first streams in mid-run
 	_build_parts()
 
 
@@ -363,6 +384,15 @@ func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, shadows :=
 
 func _build_item(h: Dictionary) -> Node3D:
 	var n := Node3D.new()
+	var pid := prop_for(h)
+	if pid != "" and PropKit.has(pid):
+		# Small props cull at PROP_VIS_END (well past the 4 s it takes to reach them at top speed);
+		# the hulk is car-sized and carries hazard flashers, so it stays.
+		var p := PropKit.make(pid, pid in ["hulk", "water", "jersey", "barrel", "crate", "pallet", "aframe"],
+			0.0 if pid == "hulk" else PROP_VIS_END)
+		n.add_child(p)
+		_add_prop_lamps(n, pid, _bounds(p))
+		return n
 	match String(h.model):
 		"cone":
 			_part(n, _meshes.cone_base, _mats.black, Vector3(0, 0.02, 0))
@@ -417,3 +447,35 @@ func _build_item(h: Dictionary) -> Node3D:
 				for sz in [-1.0, 1.0]:
 					_box(n, Vector3(0.16, 0.08, 0.06), Vector3(sx * (he.x - 0.12), 0.8, sz * (he.y - 0.02)), _mats.blink)
 	return n
+
+
+## Bounds of a prop's meshes in its own space (lamps are placed on it, not on the collision box).
+func _bounds(n: Node, xf := Transform3D.IDENTITY) -> AABB:
+	var t := xf * (n as Node3D).transform if n is Node3D else xf
+	var out := AABB()
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		out = t * (n as MeshInstance3D).mesh.get_aabb()
+	for c in n.get_children():
+		var a := _bounds(c, t)
+		if a.size != Vector3.ZERO:
+			out = a if out.size == Vector3.ZERO else out.merge(a)
+	return out
+
+
+## The blinking amber lamps / hazard lights the built-in visuals carried, placed on the Meshy prop.
+func _add_prop_lamps(n: Node3D, pid: String, bb: AABB) -> void:
+	var top := bb.end.y
+	match pid:
+		"barrel":
+			_part(n, _meshes.lamp, _mats.blink, Vector3(0, top + 0.06, 0))
+		"aframe":
+			_part(n, _meshes.lamp, _mats.blink, Vector3(0.22, top + 0.04, 0))
+			_part(n, _meshes.lamp, _mats.blink, Vector3(-0.22, top + 0.04, 0))
+		"water", "jersey":
+			_part(n, _meshes.lamp, _mats.blink, Vector3(0, top + 0.06, bb.end.z - 0.15))
+		"hulk":  # hazard flashers in the lamp clusters, just inside the body outline
+			for sx: float in [-1.0, 1.0]:
+				for sz: float in [-1.0, 1.0]:
+					var x := sx * (bb.size.x * 0.5 - 0.22)
+					var z: float = bb.position.z + 0.12 if sz < 0.0 else bb.end.z - 0.12
+					_box(n, Vector3(0.16, 0.07, 0.05), Vector3(x, 0.72, z), _mats.blink)

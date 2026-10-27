@@ -25,7 +25,7 @@ if [ -n "$em" ]; then echo "FAIL: email addresses in tracked files:"; echo "$em"
 built=$(git ls-files | grep -E '^(dist|export|\.godot)/')
 if [ -n "$built" ]; then echo "FAIL: build output tracked in git:"; echo "$built" | head -5; fail=1; fi
 
-brands=$(git ls-files | grep -i -E '(^|[^a-z])(ferrari|lamborghini|porsche|bmw|mercedes|audi|toyota|honda|nissan|tesla|bugatti|mclaren)([^a-z]|$)')
+brands=$(git ls-files | grep -i -E '(^|[^a-z])(ferrari|lamborghini|porsche|bmw|mercedes|audi|toyota|honda|nissan|tesla|bugatti|mclaren|mazda|isuzu|subaru|mitsubishi)([^a-z]|$)')
 if [ -n "$brands" ]; then echo "FAIL: real car marques in file names:"; echo "$brands" | head -5; fail=1; fi
 
 # Files the release build copies into every download must be tracked (a too-greedy .gitignore once hid them).

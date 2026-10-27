@@ -5,7 +5,7 @@ config_version=5
 
 config/name="SendIt"
 config/description="Night highway traffic weaving. Thread the gaps, bank the combo."
-config/version="0.2.0"
+config/version="0.3.0"
 config/icon="res://assets/icon/icon.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")

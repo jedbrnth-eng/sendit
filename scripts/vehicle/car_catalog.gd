@@ -14,6 +14,9 @@ const DEFAULT_ID := "voltage"
 ## cover the body measured from the mesh (CarModel body_half_width; tests/test_contacts_yaw.gd).
 ## roll = body roll per unit steer at speed (negative leans into the turn, like a bike).
 ## scrape_crash_kmh = barrier impact speed that becomes a crash; crash_keep scales speed kept.
+## Optional mirror anchors (car space, car faces -Z): "mirror_rear" (rear-view camera) and
+## "mirror_side" (left mirror; the right is its x-mirror). Omitted = derived from length, hitbox,
+## the model's measured half extents and the hood-cam height (MirrorConfig.anchors).
 const VEHICLES := [
 	{
 		"id": "voltage", "name": "VOLTAGE GT", "tagline": "Lime-and-black hypercoupe. The benchmark.",
@@ -35,8 +38,8 @@ const VEHICLES := [
 	},
 	{
 		"id": "kaze", "name": "KAZE RT", "tagline": "90s twin-turbo fastback. Fast, balanced, big wing.",
-		"model": "res://assets/cars/kaze/kaze_rt.glb", "length": 4.64, "wheels": 4,
-		"hitbox": Vector2(1.18, 2.29),  # body 1.11 measured (rear haunch), mirrors 1.20
+		"model": "res://assets/cars/kaze/kaze_rt.glb", "length": 4.64, "wheels": 4,  # Meshy model, tools/meshy/specs/kaze.py
+		"hitbox": Vector2(1.18, 2.29),  # hero-width floor 1.18 (Meshy body 1.18 incl. mirrors)
 		"max_kmh": 318.0, "accel": 9.9, "steer_rate": 1.95, "brake_decel": 16.0,
 		"scrape_crash_kmh": 30.0, "crash_keep": 1.0, "roll": 0.05,
 		"paints": {}, "coat": ["Paint Kaze"], "signature": false,
@@ -44,8 +47,9 @@ const VEHICLES := [
 	},
 	{
 		"id": "kaiju", "name": "KAIJU R", "tagline": "Boxy AWD super-coupe. Heavy, planted, hard to kill.",
+		# same id as 0.2 so saved garages/unlocks stay valid; Meshy model, tools/meshy/specs/kaiju.py
 		"model": "res://assets/cars/kaiju/kaiju_r.glb", "length": 4.74, "wheels": 4,
-		"hitbox": Vector2(1.2, 2.34),  # body 1.15 measured (box flares), mirrors 1.19
+		"hitbox": Vector2(1.18, 2.37),  # Meshy body: mirrors 1.16, hero-width floor 1.18
 		"max_kmh": 300.0, "accel": 9.7, "steer_rate": 1.7, "brake_decel": 17.0,
 		"scrape_crash_kmh": 36.0, "crash_keep": 1.12, "roll": 0.035,
 		"paints": {}, "coat": ["Paint Kaiju"], "signature": false,
@@ -59,6 +63,16 @@ const VEHICLES := [
 		"scrape_crash_kmh": 25.0, "crash_keep": 0.9, "roll": 0.06,
 		"paints": {}, "coat": ["Paint Rotor"], "signature": false,
 		"hood_cam": Vector3(0, 1.05, -0.85), "cam_lift": 0.0, "cam_scale": 0.97, "engine_pitch": 1.3,
+	},
+	{
+		# Meshy Pro image-to-3D, scrubbed of real badges and rebuilt for the game by tools/meshy/*.
+		"id": "naga_xr", "name": "NAGA XR", "tagline": "Widebody Thai street pickup, full wrap. Big, planted, loud.",
+		"model": "res://assets/cars/naga_xr/naga_xr.glb", "length": 5.4, "wheels": 4,
+		"hitbox": Vector2(1.18, 2.7),
+		"max_kmh": 298.0, "accel": 9.0, "steer_rate": 1.72, "brake_decel": 15.0,
+		"scrape_crash_kmh": 40.0, "crash_keep": 1.18, "roll": 0.065,
+		"paints": {}, "coat": ["Wrap NagaXR"], "signature": false,
+		"hood_cam": Vector3(0, 1.5, -1.45), "cam_lift": 0.35, "cam_scale": 1.06, "engine_pitch": 0.82,
 	},
 
 ]

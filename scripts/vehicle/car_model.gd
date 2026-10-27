@@ -66,6 +66,7 @@ static func build(path: String, length_m: float, width_m := 0.0, height_m := 0.0
 	var height := aabb.size.y * sy
 	root.set_meta("half_extents", half)
 	root.set_meta("height", height)
+	root.set_meta("src", [path, length_m, width_m, height_m, paint, lamps])  # replay rebuilds it from this
 
 	var key := "%s|%.2f|%.2f|%.2f" % [path, length_m, width_m, height_m]
 	if not _rigs.has(key):

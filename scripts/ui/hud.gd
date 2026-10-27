@@ -53,6 +53,8 @@ var _shown_bank := 0.0
 var _bank_tween: Tween
 var _had_countdown := false
 var _t := 0.0
+var _top_shift := 0.0
+var _top_base := {}          # Control -> [offset_top, offset_bottom] before any shift
 
 
 func _ready() -> void:
@@ -161,8 +163,23 @@ func _ready() -> void:
 	mark.text = "SEND IT"
 	_place(mark, Control.PRESET_BOTTOM_LEFT, 64, -96, 400, 44)
 	_hint = _label(_root, _body_font, 20, Color(1, 1, 1, 0.7))
-	_hint.text = "W/S  throttle · brake      A/D  steer      C  camera      R  restart      ESC  pause"
+	_hint.text = "W/S  throttle · brake      A/D  steer      C  camera      M  mirrors      R  restart      ESC  pause"
 	_place(_hint, Control.PRESET_BOTTOM_LEFT, 66, -56, 1100, 32)
+
+	for c in [_combo, _mult, _gaps, _heat_bg, _popups]:
+		_top_base[c] = [c.offset_top, c.offset_bottom]
+
+
+## Mirrors: the top-centre rear-view pushes the combo cluster and call-outs down by `dy` px.
+func set_top_shift(dy: float) -> void:
+	if is_equal_approx(dy, _top_shift):
+		return
+	_top_shift = dy
+	for c in _top_base:
+		var b: Array = _top_base[c]
+		var shift := maxf(0.0, dy - 14.0)  # the cluster already starts 30 px down
+		(c as Control).offset_top = b[0] + shift
+		(c as Control).offset_bottom = b[1] + shift
 
 
 ## Anchor a control to `preset` and place it at offset (x, y) with size (w, h) from that anchor.

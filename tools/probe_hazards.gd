@@ -63,6 +63,7 @@ func _process(_d: float) -> void:
 	if Time.get_ticks_msec() - _t0 > MAX_MS:
 		push_error("probe_hazards: no finish after %d ms (shot %d)" % [MAX_MS, _shot])
 		CarModel.release()
+		PropKit.release()
 		get_tree().quit(1)
 		_shot = STRETCHES.size()
 		return
@@ -90,6 +91,7 @@ func _process(_d: float) -> void:
 	if _shot >= STRETCHES.size():
 		print("HAZARD_PROBE done=%d" % _shot)
 		CarModel.release()
+		PropKit.release()
 		get_tree().quit()
 		return
 	_go()

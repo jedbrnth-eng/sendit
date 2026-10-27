@@ -18,6 +18,8 @@ extends Node3D
 ## Promo captures: --no-hud hides the HUD and pursuit panel.
 ## --menu=settings|pause opens that menu at boot (proof shots of the menus).
 ## Police: --pursuit[=frame], --dist=<m>, --cam=pursuit (see scripts/police/police_manager.gd).
+## Replay (scripts/replay): --replay-at-end plays the end-of-round replay in proof runs too
+## (--autodrive/--capture skip it otherwise); --replay-test also quits when it ends.
 
 ## Screen to open after the next scene reload (survives reload_current_scene as a static).
 static var _next_screen := ""
@@ -26,12 +28,14 @@ var highway: Highway
 var player: PlayerCar
 var traffic: TrafficManager
 var hazards: ShoulderHazards
+var roadside: RoadsideProps
 var camera: ChaseCamera
 var scorer: GapScorer
 var hud: Hud
 var audio: CarAudio
 var police: PoliceManager     # police hook
 var pursuit_hud: PursuitHud
+var mirrors: Mirrors
 var session := RunSession.new()
 var best := BestStore.new(String(LaunchArgs.get_value("best-file", BestStore.PATH)))  # --best-file: probes
 var screen := ""
@@ -49,6 +53,7 @@ var _stats := {"gaps": 0, "crashes": 0, "max_kmh": 0.0}
 var _escapes := 0             # progression: police escapes this run, and their heat
 var _escape_heat_sum := 0
 var _max_escape_heat := 0
+var recorder := ReplayRecorder.new()  # replay hook: passive recording for the end-of-round replay
 
 
 func _ready() -> void:
@@ -74,6 +79,9 @@ func _ready() -> void:
 	hazards = ShoulderHazards.new()
 	hazards.setup(player, round_seed)
 	add_child(hazards)
+	roadside = RoadsideProps.new()  # Meshy roadside dressing beyond the rails (visual only)
+	roadside.setup(round_seed)
+	add_child(roadside)
 
 	camera = ChaseCamera.new()
 	camera.target = player
@@ -88,6 +96,13 @@ func _ready() -> void:
 
 	scorer = GapScorer.new()
 	hud = Hud.new()
+	# Rear-view + side mirrors (under the HUD layer order; they follow hud.visible).
+	mirrors = Mirrors.new()
+	mirrors.player = player
+	mirrors.camera = camera
+	mirrors.hud = hud
+	mirrors.police = police
+	add_child(mirrors)
 	add_child(hud)
 	hud.bind(scorer, player, session)
 	hud.best_score = best.best_score
@@ -98,6 +113,11 @@ func _ready() -> void:
 	audio.player = player
 	add_child(audio)
 
+	# Replay hook (before _on_crash, which can end the run on this very crash).
+	recorder.bind_scorer(scorer)
+	player.crashed.connect(func(k):
+		if session.is_running():
+			recorder.log_crash(k))
 	traffic.gap.connect(_on_gap)
 	player.crashed.connect(_on_crash)
 	scorer.banked.connect(func(p, n): audio.on_bank(p, n))
@@ -116,6 +136,7 @@ func _ready() -> void:
 		DirAccess.make_dir_recursive_absolute(_capture_dir)
 	highway.update_stream(player.position.z)
 	hazards.update_stream(player.position.z)
+	roadside.update_stream(player.position.z)
 	_open(_pick_screen())
 	match String(Boot.arg("menu", "")):  # proof shots: --menu=settings (title) / --menu=pause
 		"settings":
@@ -206,11 +227,42 @@ func _show_results() -> void:
 	_results.prev_best = prev
 	_results.rolled_up.connect(func(): audio.on_results(is_best))
 	_award(_results)
+	_results.can_replay = recorder.frame_count() > 0  # replay hook
+	_results.replay_requested.connect(_play_replay)
 	add_child(_results)
 	hud.visible = false
+	if ReplayDirector.auto_play():
+		if session.end_reason == "wrecks":
+			# Let the final wreck play out (and keep recording it) before the replay starts.
+			_results.visible = false
+			_results.process_mode = Node.PROCESS_MODE_DISABLED
+			recorder.tail = ReplayRecorder.WRECK_TAIL_S
+			get_tree().create_timer(ReplayRecorder.WRECK_TAIL_S).timeout.connect(_play_replay)
+		else:
+			_play_replay()
 	print("RESULTS score=%d best_combo=%d gaps=%d max_kmh=%d dist_m=%d wrecks=%d reason=%s new_best=%s" % [
 		scorer.banked_total, scorer.best_combo, session.gaps, int(session.max_kmh), int(session.distance_m),
 		session.wrecks, session.end_reason, is_best])
+
+
+## Replay hook: highlights of this run, results card hidden and paused until it ends.
+func _play_replay() -> void:
+	recorder.tail = 0.0
+	print(recorder.stats_line())
+	var d := ReplayDirector.make(self, recorder, session.end_reason)
+	if d == null:
+		_results.visible = true
+		_results.process_mode = Node.PROCESS_MODE_INHERIT
+		return
+	_results.visible = false
+	_results.process_mode = Node.PROCESS_MODE_DISABLED
+	d.finished.connect(func():
+		_results.visible = true
+		_results.process_mode = Node.PROCESS_MODE_INHERIT
+		if Boot.has_arg("replay-test"):
+			traffic.process_mode = Node.PROCESS_MODE_DISABLED  # no gaps into freed audio while quitting
+			_finish())
+	add_child(d)
 
 
 func _on_gap(clearance: float, side: int, _oncoming: bool, car: TrafficCar) -> void:
@@ -348,6 +400,8 @@ func open_pause() -> PauseMenu:
 func _physics_process(delta: float) -> void:
 	_frame += 1
 	var prev_count := session.countdown_number()
+	if session.is_running() or recorder.tail > 0.0:
+		recorder.tick(delta, player, traffic.cars)  # replay hook: read-only
 	session.tick(delta, player.kmh())
 	if session.state == RunSession.State.COUNTDOWN and session.countdown_number() != prev_count:
 		audio.on_count(session.countdown_number())
@@ -357,6 +411,7 @@ func _physics_process(delta: float) -> void:
 		scorer.tick(delta)
 	highway.update_stream(player.position.z)
 	hazards.update_stream(player.position.z)
+	roadside.update_stream(player.position.z)
 	_stats.max_kmh = maxf(_stats.max_kmh, player.kmh())
 	if _frame in _wreck_at:
 		player.on_traffic_hit(140.0, 0.0)  # proof aid: a real hit through the normal crash path
@@ -391,6 +446,7 @@ func _finish(exit_code := 0) -> void:
 			n.process_mode = Node.PROCESS_MODE_DISABLED
 	audio.shutdown()
 	CarModel.release()
+	PropKit.release()
 	audio.queue_free()
 	for i in 3:
 		await get_tree().process_frame

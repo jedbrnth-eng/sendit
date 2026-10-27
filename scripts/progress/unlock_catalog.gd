@@ -37,6 +37,7 @@ const ITEMS := [
 	{"id": "car_kaze", "slot": "car", "name": "KAZE RT", "level": 5, "price": 2500, "car": "kaze"},
 	{"id": "car_kaiju", "slot": "car", "name": "KAIJU R", "level": 10, "price": 5000, "car": "kaiju"},
 	{"id": "car_rotor", "slot": "car", "name": "ROTOR FX", "level": 15, "price": 8000, "car": "rotor"},
+	{"id": "car_naga_xr", "slot": "car", "name": "NAGA XR", "level": 20, "price": 10000, "car": "naga_xr"},
 	# --- paint colour ---
 	{"id": "paint_factory", "slot": "paint", "name": "Factory", "level": 1, "price": 0, "color": Color(0, 0, 0, 0)},
 	{"id": "paint_black", "slot": "paint", "name": "Midnight Black", "level": 1, "price": 400, "color": Color(0.012, 0.012, 0.016)},

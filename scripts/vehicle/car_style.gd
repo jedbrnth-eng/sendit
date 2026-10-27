@@ -20,6 +20,9 @@ const RIG := {
 		"exhaust_x": [-0.22, -0.1, 0.1, 0.22], "exhaust_y": 0.27, "exhaust_z": -0.05, "plate_y": 0.5, "plate_z": -0.12},
 	"naga": {"body": ["Wrap Naga"], "rims": ["Rim Black"], "lip": ["Steel"],
 		"exhaust_x": [-0.15, 0.0, 0.15], "exhaust_y": 0.27, "exhaust_z": 0.02, "plate_y": 0.6, "plate_z": 0.0},
+	# recolor_ref: median luminance of the printed wrap (tools/meshy/meshy_build.py --spec naga_xr prints it).
+	"naga_xr": {"body": ["Wrap NagaXR"], "rims": ["Rim Black"], "lip": ["Steel"], "recolor_ref": 0.135,
+		"exhaust_x": [-0.62, 0.62], "exhaust_y": 0.3, "exhaust_z": -0.12, "plate_y": 0.5, "plate_z": 0.0},
 }
 
 
@@ -97,6 +100,12 @@ static func _paint(car: CarBody, model: Node3D, rig: Dictionary, paint: Dictiona
 				mat.set_shader_parameter("use_tex", true)
 				mat.set_shader_parameter("tex", tex)
 				mat.set_shader_parameter("tex_tint", Color(base.r, base.g, base.b))
+			elif tex and rig.has("recolor_ref"):
+				# Printed livery: recolour it (keeps stripes and shading) instead of a flat fill.
+				mat.set_shader_parameter("use_tex", true)
+				mat.set_shader_parameter("tex", tex)
+				mat.set_shader_parameter("recolor", true)
+				mat.set_shader_parameter("recolor_ref", rig.recolor_ref)
 			var c := base if factory else col
 			mat.set_shader_parameter("albedo", Color(c.r, c.g, c.b))
 			mat.set_shader_parameter("metallic", finish.metallic)
