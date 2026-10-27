@@ -12,6 +12,10 @@ uniform vec3 albedo : source_color = vec3(0.4, 0.9, 0.05);
 uniform bool use_tex = false;
 uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec3 tex_tint : source_color = vec3(1.0);
+// Recolour a printed livery (Naga XR): keep the texture's light/dark detail, swap its hue for the
+// paint. base = paint * luminance(tex) / recolor_ref (recolor_ref = the livery's typical luminance).
+uniform bool recolor = false;
+uniform float recolor_ref = 0.135;
 uniform float metallic = 0.45;
 uniform float roughness = 0.3;
 uniform float coat = 0.7;
@@ -71,7 +75,10 @@ float pattern_mask(vec3 p) {
 
 void fragment() {
 	vec3 base = albedo;
-	if (use_tex) {
+	if (use_tex && recolor) {
+		float l = dot(texture(tex, UV).rgb, vec3(0.2126, 0.7152, 0.0722));
+		base = min(albedo * clamp(l / recolor_ref, 0.0, 2.5), vec3(1.0));
+	} else if (use_tex) {
 		base = texture(tex, UV).rgb * tex_tint;
 	}
 	float m = pattern_mask(car_pos);

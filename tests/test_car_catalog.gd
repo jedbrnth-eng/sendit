@@ -10,9 +10,9 @@ const PATH := "user://test_garage.cfg"
 const PACK := ["kaze", "kaiju", "rotor"]
 
 
-func test_catalog_has_five_unique_vehicles() -> void:
+func test_catalog_has_six_unique_vehicles() -> void:
 	var ids := CarCatalog.ids()
-	runner.check(ids.size() == 5, "five vehicles (hero, pickup, car pack of three), moped shelved (got %d)" % ids.size())
+	runner.check(ids.size() == 6, "six vehicles (hero, two pickups, car pack of three), moped shelved (got %d)" % ids.size())
 	for id in PACK:
 		runner.check(ids.has(id), "car pack vehicle %s is in the garage" % id)
 	var seen := {}

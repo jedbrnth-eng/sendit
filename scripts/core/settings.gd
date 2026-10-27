@@ -11,7 +11,7 @@ class_name Settings extends RefCounted
 const PATH := "user://settings.cfg"
 const LEVELS := ["LOW", "MEDIUM", "HIGH"]
 ## Keyboard actions the player may rebind (pads keep their fixed layout).
-const REBINDABLE := ["throttle", "brake", "steer_left", "steer_right", "handbrake", "camera", "restart"]
+const REBINDABLE := ["throttle", "brake", "steer_left", "steer_right", "handbrake", "camera", "restart", "mirrors"]
 const DEFAULTS := {
 	"master": 1.0,
 	"music": 0.8,
@@ -22,6 +22,9 @@ const DEFAULTS := {
 	"fullscreen": false,
 	"fov": 0.0,          # degrees added to the chase cam's speed-widened FOV
 	"hood_cam": false,   # start runs in the hood camera
+	"mirrors": 2,        # MirrorConfig: 0 off, 1 rear-view only, 2 rear + side mirrors
+	"mirror_size": 1,    # 0 small, 1 medium, 2 large
+	"replay": true,      # end-of-round highlight replay (scripts/replay)
 }
 const DRAW_SCALE := [0.55, 0.8, 1.0]
 
@@ -56,8 +59,12 @@ static func clamp_value(key: String, v):
 			return clampi(int(v), 0, 2)
 		"fov":
 			return clampf(snappedf(float(v), 1.0), -10.0, 15.0)
-		"fullscreen", "hood_cam":
+		"fullscreen", "hood_cam", "replay":
 			return bool(v)
+		"mirrors":
+			return MirrorConfig.clamp_mode(v)
+		"mirror_size":
+			return MirrorConfig.clamp_size(v)
 	return v
 
 
@@ -66,10 +73,11 @@ func reset() -> void:
 	keys.clear()
 
 
-## One preset for the three graphics rows.
+## One preset for the three graphics rows (LOW also drops the side mirrors: rear-view only).
 func set_quality(level: int) -> void:
 	for k in ["shadows", "glow", "draw"]:
 		set_value(k, level)
+	set_value("mirrors", MirrorConfig.REAR if level <= 0 else MirrorConfig.ALL)
 
 
 ## The preset level when shadows/glow/draw agree, else -1 (custom).
@@ -191,6 +199,7 @@ func apply(tree: SceneTree = null) -> void:
 	if tree:
 		tree.root.positional_shadow_atlas_size = 4096 if get_value("shadows") >= 2 else 0
 		tree.call_group(NightEnvironment.GROUP, "apply_settings", self)
+		tree.call_group(Mirrors.GROUP, "apply_settings", self)
 
 
 func _bus(name: StringName, v: float) -> void:

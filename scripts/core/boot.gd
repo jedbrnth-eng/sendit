@@ -16,6 +16,7 @@ extends Node
 ##   --loadout=a,b,c     proof: force those garage items onto the player car (never saved)
 ##   --plate=TEXT        proof: plate text (filtered)
 ##   --windowed          ignore the saved fullscreen setting
+##   --mirrors=off|rear|all  override the mirror setting for this run (perf A/B, proof shots)
 
 var args: Dictionary = {}
 
@@ -28,6 +29,7 @@ const ACTIONS := {
 	"camera": [KEY_C, JOY_BUTTON_Y],
 	"restart": [KEY_R, JOY_BUTTON_START],
 	"pause": [KEY_ESCAPE, JOY_BUTTON_BACK],
+	"mirrors": [KEY_M],
 }
 
 

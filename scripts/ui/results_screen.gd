@@ -13,6 +13,7 @@ const PINK := Color(1.0, 0.24, 0.52)
 const CYAN := Color(0.3, 0.88, 1.0)
 
 signal rolled_up
+signal replay_requested  # replay hook: R / pad X = WATCH REPLAY (main.gd plays it)
 
 var score := 0
 var best_combo := 0
@@ -30,6 +31,7 @@ var progress := {}
 var profile: Profile
 var saved := false
 var assisted := false
+var can_replay := false
 
 var _display: Font
 var _body: Font
@@ -115,7 +117,7 @@ func _ready() -> void:
 	_place(_prompt, Control.PRESET_CENTER_TOP, -600, 902, 1200, 56)
 	_prompt.modulate.a = 0.0
 	var esc := _label(root, _body, 24, Color(1, 1, 1, 0.55))
-	esc.text = "ESC  TITLE SCREEN"
+	esc.text = "ESC  TITLE SCREEN" + ("      R  WATCH REPLAY" if can_replay else "")
 	esc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_place(esc, Control.PRESET_CENTER_TOP, -400, 962, 800, 34)
 	_build_xp(root)
@@ -124,6 +126,17 @@ func _ready() -> void:
 	roll.tween_interval(0.35)
 	roll.tween_property(self, "_shown", float(score), 1.6).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	roll.tween_callback(_landed)
+
+
+func _unhandled_input(e: InputEvent) -> void:
+	if not can_replay or not visible:
+		return
+	var key: bool = e is InputEventKey and e.pressed and not e.echo and (e as InputEventKey).physical_keycode == KEY_R
+	var pad: bool = e is InputEventJoypadButton and e.pressed and (e as InputEventJoypadButton).button_index == JOY_BUTTON_X
+	if key or pad:
+		if get_viewport():
+			get_viewport().set_input_as_handled()
+		replay_requested.emit()
 
 
 func _process(delta: float) -> void:

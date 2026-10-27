@@ -5,7 +5,7 @@
 extends Node3D
 ## Car gallery for visual QA: every traffic model (+ hero) parked on the night highway, camera
 ## behind (or in front with --front), drifting slowly. Saves frames to /tmp/sendit_gallery/.
-## usage: godot --path . res://tools/gallery.tscn -- [--front] [--frames=6]
+## usage: godot --path . res://tools/gallery.tscn -- [--front|--top|--side] [--roll] [--only=<model path part>] [--frames=6]
 
 var cam: Camera3D
 var _n := 0
@@ -25,6 +25,12 @@ func _ready() -> void:
 	h.update_stream(0.0)
 	var models: Array = TrafficManager.MODELS.duplicate()
 	models.append([PlayerCar.MODEL, 4.6, 2.0, 1, 1.0, 0, false])
+	for id in CarCatalog.ids():  # garage cars too (--only=naga_xr etc.)
+		var s := CarCatalog.spec(id)
+		if s.model != PlayerCar.MODEL:
+			models.append([s.model, s.length, 2.0, 1, 1.0, 0, false])
+	for m in PoliceFleet.MODELS:  # heat-gated Meshy cops (--only=police_meshy)
+		models.append([m[0], m[1], m[2], 1, 1.0, 0, false])
 	var only := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
@@ -57,9 +63,15 @@ func _process(_d: float) -> void:
 	var x := RoadSpec.lane_x(1) + 1.85
 	if _only:
 		x = RoadSpec.lane_x(0)
-	if OS.get_cmdline_user_args().has("--top"):
+	if OS.get_cmdline_user_args().has("--side") and _only:
+		cam.position = Vector3(x + 8.0, 1.3, -20.0)
+		cam.look_at(Vector3(x, 0.7, -20.0))
+	elif OS.get_cmdline_user_args().has("--top"):
 		cam.position = Vector3(x, 9.0, -14.0)
 		cam.look_at(Vector3(x, 0.0, -26.0))
+	elif _front and _only:
+		cam.position = Vector3(x + 1.6, 1.5, -27.8)
+		cam.look_at(Vector3(x, 0.7, -20.0))
 	elif _front:
 		cam.position = Vector3(x + sin(drift) * 0.5, 2.2, -78.0)
 		cam.look_at(Vector3(x, 0.6, -40.0))
@@ -71,7 +83,12 @@ func _process(_d: float) -> void:
 			cam.look_at(Vector3(x, 0.7, -20.0))
 	if _n > 30 and _n <= 30 + _frames:
 		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png("/tmp/sendit_gallery/%s_%02d.png" % ["top" if OS.get_cmdline_user_args().has("--top") else ("front" if _front else "rear"), _n - 30])
+		get_viewport().get_texture().get_image().save_png("/tmp/sendit_gallery/%s_%02d.png" % [_view(), _n - 30])
 	if _n > 32 + _frames:
 		CarModel.release()
 		get_tree().quit()
+
+
+func _view() -> String:
+	var a := OS.get_cmdline_user_args()
+	return "side" if a.has("--side") and _only else ("top" if a.has("--top") else ("front" if _front else "rear"))

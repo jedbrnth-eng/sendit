@@ -27,8 +27,9 @@ var _siren: AudioStreamPlayer3D
 var _siren_yelp := false
 
 
-static func make(model_index: int) -> CopCar:
-	var m: Array = MODELS[model_index % MODELS.size()]
+static func make(model_index: int, heat := 1) -> CopCar:
+	var models := PoliceFleet.pool(MODELS, heat)  # heat 3+ adds the Meshy interceptors
+	var m: Array = models[model_index % models.size()]
 	var c := CopCar.new()
 	var body := CarModel.build(m[0], m[1])
 	c.add_child(body)

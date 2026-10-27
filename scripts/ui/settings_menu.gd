@@ -16,7 +16,8 @@ const GOLD := Color(1.0, 0.82, 0.35)
 const PINK := Color(1.0, 0.24, 0.52)
 const CYAN := Color(0.3, 0.88, 1.0)
 const ACTION_NAMES := {"throttle": "THROTTLE", "brake": "BRAKE", "steer_left": "STEER LEFT",
-	"steer_right": "STEER RIGHT", "handbrake": "HANDBRAKE", "camera": "CAMERA", "restart": "RESTART"}
+	"steer_right": "STEER RIGHT", "handbrake": "HANDBRAKE", "camera": "CAMERA", "restart": "RESTART",
+	"mirrors": "MIRRORS"}
 
 var settings: Settings
 var _display: Font
@@ -102,6 +103,10 @@ func _ready() -> void:
 	_slider("FIELD OF VIEW", "fov", -10.0, 15.0, 1.0, func(v): return "%+d°" % roundi(v))
 	_option("START CAMERA", ["CHASE", "HOOD"], func(): return 1 if settings.get_value("hood_cam") else 0,
 		func(i): settings.set_value("hood_cam", i == 1))
+	_option("MIRRORS", MirrorConfig.MODE_NAMES, func(): return settings.get_value("mirrors"), func(i): settings.set_value("mirrors", i))
+	_option("MIRROR SIZE", MirrorConfig.SIZE_NAMES, func(): return settings.get_value("mirror_size"), func(i): settings.set_value("mirror_size", i))
+	_option("REPLAY", ["OFF", "ON"], func(): return 1 if settings.get_value("replay") else 0,
+		func(i): settings.set_value("replay", i == 1))
 	_section("KEYBOARD")
 	for a in Settings.REBINDABLE:
 		_key_row(a)

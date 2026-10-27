@@ -170,7 +170,7 @@ func _spawn_patrol(z: float) -> CopCar:
 
 func _make_cop() -> CopCar:
 	_model_i += 1
-	return CopCar.make(_model_i)
+	return CopCar.make(_model_i, pursuit.heat)
 
 
 ## Backup arrives from behind, out of sight at first, at pursuit speed.
