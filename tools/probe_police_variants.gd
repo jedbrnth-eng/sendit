@@ -66,6 +66,8 @@ func _process(_d: float) -> void:
 		_busy = true
 		await RenderingServer.frame_post_draw
 		_busy = false
+		if _shot >= SHOTS.size():  # _finish ran (timeout) while this frame was being drawn
+			return
 		get_viewport().get_texture().get_image().save_png(path)
 	print("POLICE_SHOT ", path)
 	_shot += 1
