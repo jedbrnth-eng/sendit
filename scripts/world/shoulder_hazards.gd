@@ -34,6 +34,8 @@ const PROPS := {"cone": ["cone_a", "cone_b"], "barrel": ["barrel"], "tyre": ["ty
 	"plank": ["plank", "ladder"], "aframe": ["aframe"], "triangle": ["triangle"], "water": ["water", "jersey"]}
 ## CAR_MODELS indices (4.8 m sedans) shown as the Meshy broken-down hulk instead of a traffic model.
 const HULK_CARS := [0, 2]
+## Visibility range of the small Meshy hazard props (m from the camera).
+const PROP_VIS_END := 400.0
 
 var player: PlayerCar
 var seed_value := 7
@@ -190,6 +192,7 @@ func setup(p: PlayerCar, seed_v: int) -> void:
 
 
 func _ready() -> void:
+	PropKit.warm()  # load every Meshy prop now, not when a type first streams in mid-run
 	_build_parts()
 
 
@@ -383,7 +386,10 @@ func _build_item(h: Dictionary) -> Node3D:
 	var n := Node3D.new()
 	var pid := prop_for(h)
 	if pid != "" and PropKit.has(pid):
-		var p := PropKit.make(pid, pid in ["hulk", "water", "jersey", "barrel", "crate", "pallet", "aframe"])
+		# Small props cull at PROP_VIS_END (well past the 4 s it takes to reach them at top speed);
+		# the hulk is car-sized and carries hazard flashers, so it stays.
+		var p := PropKit.make(pid, pid in ["hulk", "water", "jersey", "barrel", "crate", "pallet", "aframe"],
+			0.0 if pid == "hulk" else PROP_VIS_END)
 		n.add_child(p)
 		_add_prop_lamps(n, pid, _bounds(p))
 		return n

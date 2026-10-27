@@ -29,6 +29,12 @@ const NEON_TEXT := [["ข้าวมันไก่", "CHICKEN RICE"], ["ก๋
 	["ร้านยา", "PHARMACY"]]
 const NEON_COLOURS := [Color(1.0, 0.2, 0.6), Color(0.2, 0.9, 1.0), Color(1.0, 0.65, 0.1), Color(0.3, 1.0, 0.4)]
 const FONT := "res://assets/fonts/ChakraPetch-Bold.ttf"
+## Visibility range per prop (m from the camera; 0 = always drawn). The verge props are small and
+## sit beside the road, so past a few hundred metres they are a few pixels but still draw calls;
+## piers and the gantry heads are big and stay. Neon signs use NEON_VIS_END.
+const VIS_END := {"palm": 350.0, "bus_shelter": 350.0, "moto_stand": 350.0, "food_stall": 350.0,
+	"shrine": 350.0, "tuktuk": 350.0}
+const NEON_VIS_END := 500.0
 ## Frontage that carries its own lamp at night (fluorescent tube, stall bulb, shrine candles):
 ## id -> [colour, energy, height m]. Unshadowed, short range: they light the prop, not the road.
 const LAMPS := {"bus_shelter": [Color(0.8, 0.92, 1.0), 2.2, 2.3], "food_stall": [Color(1.0, 0.82, 0.55), 2.6, 2.1],
@@ -38,6 +44,7 @@ var seed_value := 7
 var _chunks := {}
 var _mats := {}
 var _font: Font
+var _boxes := {}  # Vector3 size -> shared BoxMesh
 
 
 static func _rng(seed_v: int, index: int, salt: int) -> RandomNumberGenerator:
@@ -104,6 +111,7 @@ func setup(seed_v: int) -> void:
 
 
 func _ready() -> void:
+	PropKit.warm()
 	_font = load(FONT)
 	_mats.post = _mat(Color(0.18, 0.19, 0.2), Color.BLACK, 0.0)
 	_mats.board = _mat(Color(0.02, 0.02, 0.03), Color.BLACK, 0.0)
@@ -141,7 +149,7 @@ func _build_chunk(index: int) -> void:
 		if it.id == "neon":
 			n = _neon(it.text, it.colour)
 		else:
-			n = PropKit.make(it.id, false)
+			n = PropKit.make(it.id, false, float(VIS_END.get(it.id, 0.0)))
 		if n == null:
 			continue
 		n.position = Vector3(it.x, it.y, it.z)
@@ -174,14 +182,17 @@ func _signal_frame(c: Node3D, z: float) -> void:
 	_box(c, Vector3(x1 - x0, 0.3, 0.3), Vector3((x0 + x1) * 0.5, top, z - 0.1), _mats.post)
 
 
-func _box(c: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
+func _box(c: Node3D, size: Vector3, pos: Vector3, mat: Material, vis_end := 0.0) -> void:
 	var m := MeshInstance3D.new()
-	var b := BoxMesh.new()
-	b.size = size
-	m.mesh = b
+	if not _boxes.has(size):  # one shared BoxMesh per size (neon signs repeat the same 8 boxes)
+		var b := BoxMesh.new()
+		b.size = size
+		_boxes[size] = b
+	m.mesh = _boxes[size]
 	m.material_override = mat
 	m.position = pos
 	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	m.visibility_range_end = vis_end
 	c.add_child(m)
 
 
@@ -194,12 +205,12 @@ func _neon(text: Array, colour: Color) -> Node3D:
 	var glow: Material = _mats[key]
 	var y := 4.2
 	for sx in [-1.3, 1.3]:
-		_box(n, Vector3(0.12, y, 0.12), Vector3(sx, y * 0.5, 0.0), _mats.post)
-	_box(n, Vector3(3.4, 1.5, 0.12), Vector3(0, y + 0.55, 0), _mats.board)
+		_box(n, Vector3(0.12, y, 0.12), Vector3(sx, y * 0.5, 0.0), _mats.post, NEON_VIS_END)
+	_box(n, Vector3(3.4, 1.5, 0.12), Vector3(0, y + 0.55, 0), _mats.board, NEON_VIS_END)
 	for dy in [-0.78, 0.78]:
-		_box(n, Vector3(3.5, 0.06, 0.08), Vector3(0, y + 0.55 + dy, -0.08), glow)
+		_box(n, Vector3(3.5, 0.06, 0.08), Vector3(0, y + 0.55 + dy, -0.08), glow, NEON_VIS_END)
 	for dx in [-1.75, 1.75]:
-		_box(n, Vector3(0.06, 1.62, 0.08), Vector3(dx, y + 0.55, -0.08), glow)
+		_box(n, Vector3(0.06, 1.62, 0.08), Vector3(dx, y + 0.55, -0.08), glow, NEON_VIS_END)
 	for k in 2:
 		var l := Label3D.new()
 		l.text = text[k]
@@ -212,5 +223,6 @@ func _neon(text: Array, colour: Color) -> Node3D:
 		l.position = Vector3(0, y + (0.85 if k == 0 else 0.2), -0.09)
 		l.rotation.y = PI  # face -Z of the sign = toward the road once the sign is turned
 		l.double_sided = false
+		l.visibility_range_end = NEON_VIS_END
 		n.add_child(l)
 	return n

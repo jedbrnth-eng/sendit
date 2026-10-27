@@ -46,6 +46,7 @@ var _view: Array = []          # _all() snapshot used by sample()
 var _acc := 0.0
 var _ids := {}                 # instance id -> small int
 var _spec_index := {}          # str(src) -> spec index
+var _body_specs := {}          # body instance id -> spec index
 var _max_ents := 0
 
 
@@ -105,7 +106,7 @@ func _near(p: PlayerCar, cars: Array) -> Array:
 			flags |= FLAG_COP
 			if (car as CopCar).chasing:
 				flags |= FLAG_CHASING
-		out.append([_id(car), _spec(car.body.get_meta("src")), flags, car.position.x, car.position.z,
+		out.append([_id(car), _body_spec(car.body), flags, car.position.x, car.position.z,
 			car.rotation.y, car.brake_lvl])
 	return out
 
@@ -115,6 +116,15 @@ func _id(o: Object) -> int:
 	if not _ids.has(k):
 		_ids[k] = _ids.size()
 	return _ids[k]
+
+
+## Spec index of a car body, cached per body node: str(src) is only built the first time a body
+## is seen (it used to run for every car in every sample, ~1,000 string builds a second).
+func _body_spec(body: Node) -> int:
+	var k := body.get_instance_id()
+	if not _body_specs.has(k):
+		_body_specs[k] = _spec(body.get_meta("src"))
+	return _body_specs[k]
 
 
 func _spec(src: Array) -> int:

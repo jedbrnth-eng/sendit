@@ -29,6 +29,8 @@ func _ready() -> void:
 	add_child(h)
 	h.update_stream(0.0)
 	_models = TrafficManager.MODELS.duplicate()
+	for m in PoliceFleet.MODELS:  # heat-gated police variants (same row shape, unpainted)
+		_models.append([m[0], m[1], m[2], 1, 1.0, 0, false])
 	for id in CarCatalog.ids():  # garage cars, built with their own finish (entry[7] = catalog id)
 		var spec := CarCatalog.spec(id)
 		_models.append([spec.model, spec.length, 2.0, 1, 1.0, 0, false, id])
@@ -44,6 +46,7 @@ func _next() -> void:
 	if _body:
 		_body.queue_free()
 	if _i >= _models.size():
+		_body = null  # _process must not save a frame past the last model while quitting
 		CarModel.release()
 		get_tree().quit()
 		return

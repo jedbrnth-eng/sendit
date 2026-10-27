@@ -36,25 +36,29 @@ static func has(id: String) -> bool:
 
 
 ## A fresh instance of prop `id` (Node3D at the origin). Null when the file is missing.
-static func make(id: String, shadows := true) -> Node3D:
+## vis_end > 0 culls the prop's meshes beyond that many metres from the camera (visibility range):
+## a 1,000-triangle palm 600 m away is a few pixels but still a draw call in every view.
+static func make(id: String, shadows := true, vis_end := 0.0) -> Node3D:
 	if not _cache.has(id):
 		if not has(id):
 			return null
 		_cache[id] = load(path(id))
 	var n := (_cache[id] as PackedScene).instantiate() as Node3D
-	_setup(n, id, shadows)
+	_setup(n, id, shadows, vis_end)
 	return n
 
 
-static func _setup(n: Node, id: String, shadows: bool) -> void:
+static func _setup(n: Node, id: String, shadows: bool, vis_end := 0.0) -> void:
 	if n is MeshInstance3D:
 		var mi := n as MeshInstance3D
+		if vis_end > 0.0:
+			mi.visibility_range_end = vis_end
 		if not shadows:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		if GLOW.has(id) and mi.mesh:
 			mi.material_override = _glow(id, mi.mesh.surface_get_material(0))
 	for c in n.get_children():
-		_setup(c, id, shadows)
+		_setup(c, id, shadows, vis_end)
 
 
 static func _glow(id: String, src: Material) -> Material:
@@ -69,6 +73,15 @@ static func _glow(id: String, src: Material) -> Material:
 	m.roughness = 0.4
 	_glow_mats[id] = m
 	return m
+
+
+## Load every prop scene up front (ShoulderHazards/RoadsideProps call it when they enter the tree).
+## The first make() of a prop loaded its GLB from disk: 10-60 ms, a hitch mid-run whenever a prop
+## type first streamed in.
+static func warm() -> void:
+	for id in TRIS:
+		if not _cache.has(id) and has(id):
+			_cache[id] = load(path(id))
 
 
 ## Drop cached scenes/materials (statics outlive the tree and trip the exit leak check).
