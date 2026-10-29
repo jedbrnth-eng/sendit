@@ -49,11 +49,11 @@
 
 ## Download (no terminal needed)
 
-SendIt isn't code-signed or notarized yet, so Mac and Windows show a one-time warning. It's expected, and the steps below get past it.
+SendIt isn't signed with a developer certificate or notarized yet, so Mac and Windows show a one-time warning. The steps below explain how to open it.
 
 **Mac**
-1. Click **Download for Mac**. `SendIt-macOS.zip` lands in your Downloads folder and usually unzips by itself.
-2. Drag **SendIt** onto **Applications** (or leave it where it is).
+1. Click **Download for Mac**. If your browser doesn't unzip `SendIt-macOS.zip`, double-click it.
+2. Open the **SendIt-0.3.1-macOS** folder inside, then drag **SendIt.app** onto **Applications** (or leave the app in that folder).
 3. Open it. macOS will say it can't verify the app. Click **Done**, open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to SendIt, then confirm. You only do this once.
 
 **Windows**
@@ -76,7 +76,7 @@ Open **Terminal** (on a Mac: press `⌘ Space`, type `Terminal`, press Return), 
 curl -fsSL https://raw.githubusercontent.com/jedbrnth-eng/sendit/main/install.sh | bash
 ```
 
-It downloads the latest release, **verifies it against the published checksum**, installs it (to Applications on a Mac, to `~/.local/share/sendit` on Linux) and opens it. On a Mac it also clears the download flag, so there is no Open Anyway step. Want to read it first? It's [install.sh](install.sh), about 70 lines.
+It downloads the latest release, **verifies it against the published checksum**, installs it (to Applications on a Mac, to `~/.local/share/sendit` on Linux) and opens it. On Linux, launch it again with `~/.local/share/sendit/SendIt.x86_64`; this installer does not add an app-menu entry. On a Mac it also clears the download flag, so there is no Open Anyway step. Want to read it first? It's [install.sh](install.sh), about 70 lines.
 
 <sub>Every release lists a `SHA256SUMS` file so you can check your download (`shasum -a 256 -c SHA256SUMS`). You need a GPU with Vulkan 1.2 drivers on Windows and Linux (any PC from the last several years); Macs use Metal. Only tested on an Apple M4 Max so far, so [tell us](https://github.com/jedbrnth-eng/sendit/issues/new/choose) how it runs on your machine.</sub>
 
@@ -179,7 +179,7 @@ The game is **GPU-heavy by design**: Forward+ rendering, 2× MSAA, glow, screen-
 
 0.3.1 replaces most of the audio with sounds synthesized by SendIt's own scripts in `tools/audio/`: a layered engine with three characters (V8, turbo straight-six, rotary) and load and overrun loops, road loops (tyre roll, rumble strip, shoulder grit, barrier scrape), crashes graded by severity, score and menu sounds, and police sirens, shove whoops and roadblock air horns. The recorded pass-bys, tyre squeal, road roar and wind are kept. Everything runs through separate buses with ducking under crashes and a limiter on the master.
 
-It was checked with measurements (loudness, peaks, clicks) and an automatic classifier, **not by ear on a range of speakers**, and some sounds still read as synthetic. Judge it by ear: `docs/audio-demo/scenario_before.ogg` (0.3.0) and `scenario_after.ogg` play the same 60-second scenario, and [`docs/audio-audit.md`](docs/audio-audit.md) has the numbers.
+It was checked with measurements (loudness, peaks, clicks) and an automatic classifier, **not by ear on a range of speakers**, and some sounds still read as synthetic. Judge it by ear: [listen to 0.3.0](docs/audio-demo/scenario_before.ogg) and [listen to 0.3.1](docs/audio-demo/scenario_after.ogg) playing the same 60-second scenario, or see [`docs/audio-audit.md`](docs/audio-audit.md) for the numbers.
 
 ## What's inside
 
@@ -211,7 +211,7 @@ Boot (input map, launch args, Settings) ─► Main ─► Highway (streams road
                                              └──► Title · CarSelect (garage) · HUD · Pause / Settings · Results · Audio
 ```
 
-- **Scenes are built in code**, so every change shows up in a diff. `main.tscn` is a single node.
+- **Scenes are built in code**, so every change shows up in a diff. [`scenes/main.tscn`](scenes/main.tscn) is a single node.
 - **`CarModel`** normalises any glTF car: it scales to a target length, finds where the tyres touch the road, adds lamp lenses and flares, and rigs each wheel with a spin pivot (single tyres and whole-axle meshes both work).
 - **`GapScorer`**, **`PassRules`**, **`RunReward`**, **`XpCurve`**, **`UnlockCatalog`** and **`Settings`** are pure logic with no nodes, so scoring, rewards and settings are unit-tested directly.
 - **Audio** is mixed in a bus layout (engine, road, siren, effects, UI, music) with ducking and a limiter on the master.
