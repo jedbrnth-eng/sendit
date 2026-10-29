@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3 tour: title screen, car select and paint garage with the new Naga XR pickup, the Naga XR and Kaze RT threading traffic at 175 to 250 km/h with SPLIT! popups, mirror frames flashing red with police behind, a crash into a barrel on the hard shoulder, the replay cam with its GAP 4/4 SPLIT caption, then the results screen with LEVEL UP" width="860"></a><br>
-  <sub>Rendered by the game itself, autopilot driving (a light preview, 512×288 at 16 fps, 15 seconds). <a href="docs/demo.mp4">Watch the 34-second video in full quality</a>.</sub>
+  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3.1 tour: title screen, car select, cars threading traffic in a police pursuit with mirrors lit by the cops behind, a wreck on the hard shoulder, the replay cam with its GAP 2/4 SPLIT caption, then the results screen with LEVEL UP" width="860"></a><br>
+  <sub>Rendered by the game itself, autopilot driving (a light preview, 512×288 at 16 fps, 15 seconds). <a href="docs/demo.mp4">Watch the 31-second video in full quality</a>.</sub>
 </p>
 
 > **Status: early release (0.3.1).** New in 0.3.1: much harder police (telegraphed shoves, rolling roadblocks from heat 3, faster backup), four mirror modes, smoother streaming, a new synthesized sound set, and the Naga XR is now the free level-3 pickup (the old Naga X is retired). Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
@@ -120,41 +120,42 @@ Gamepads work too: right and left trigger for throttle and brake, left stick to 
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/title.jpg" alt="Title screen: SEND IT wordmark, level 1 panel with the next unlock and three run goals, version v0.3.0"></td>
+    <td><img src="docs/screenshots/title.jpg" alt="Title screen: SEND IT wordmark, level 1 panel with the next unlock and three run goals"></td>
     <td><img src="docs/screenshots/car-select.jpg" alt="Car select: the Naga XR wrapped pickup on a neon turntable with speed, accel, handling and toughness bars"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/garage.jpg" alt="Garage PAINT tab: the Naga XR wrap recoloured cobalt, with colour, finish and wrap rows"></td>
-    <td><img src="docs/screenshots/mirrors.jpg" alt="Mirrors in a pursuit at 162 km/h: rear-view and side mirrors with their frames glowing red as police chase from behind"></td>
+    <td><img src="docs/screenshots/garage.jpg" alt="Garage PAINT tab: the Naga XR wrap recoloured Pulse Red, with colour, finish and wrap rows"></td>
+    <td><img src="docs/screenshots/mirrors.jpg" alt="Mirrors in a pursuit at 74 km/h: the top rear-view and the side mirrors with blue-lit frames, a police car behind"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/replay.jpg" alt="Replay cam: trackside shot of the Voltage GT with letterbox bars and the caption GAP 4/4, +1,578, 0.30 m, 189 km/h, SPLIT"></td>
-    <td><img src="docs/screenshots/results.jpg" alt="Results: 4,364 banked, NEW BEST, LEVEL UP to 2, +251 XP and +275 credits, an unlocked paint colour, R to watch the replay"></td>
+    <td><img src="docs/screenshots/replay.jpg" alt="Replay cam: trackside shot of the Naga XR with letterbox bars and the caption GAP 2/4, +1,539, 1.58 m, 218 km/h, SPLIT"></td>
+    <td><img src="docs/screenshots/results.jpg" alt="Results: 14,991 banked, NEW BEST, LEVEL UP to 3, +963 XP, unlocked items listed, R to watch the replay"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/hazards.jpg" alt="Shoulder hazards at 190 km/h: traffic cones and a drum barrel on the hard shoulder ahead of the Voltage GT"></td>
-    <td><img src="docs/screenshots/pursuit.jpg" alt="Pursuit at HEAT 5, seen from the pursuit camera: the Kaze RT (left) boxed in by three cops, including the new interceptor SUV (right)"></td>
+    <td><img src="docs/screenshots/hazards.jpg" alt="Shoulder crash at 47 km/h: a WRECK banner after hitting a cone on the hard shoulder"></td>
+    <td><img src="docs/screenshots/pursuit.jpg" alt="Pursuit: a police car right behind the Voltage GT as it banks its combo, the PURSUIT bar showing"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/naga-xr.jpg" alt="Naga XR wrapped pickup at 175 km/h: a SPLIT! in a pursuit, x1.50 multiplier"></td>
-    <td><img src="docs/screenshots/kaze-rt.jpg" alt="Kaze RT at 248 km/h: a SPLIT! with a x1.75 multiplier"></td>
+    <td><img src="docs/screenshots/naga-xr.jpg" alt="Naga XR at 239 km/h: a SPLIT! worth +5,786"></td>
+    <td><img src="docs/screenshots/kaze-rt.jpg" alt="Kaze RT at 169 km/h in a pursuit: a SPLIT! worth +2,158"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/kaiju-r.jpg" alt="Kaiju R at 154 km/h: a SPLIT! with a x2.00 multiplier"></td>
-    <td><img src="docs/screenshots/voltage-gt.jpg" alt="Voltage GT at 203 km/h: a SPLIT! between two cars"></td>
+    <td><img src="docs/screenshots/kaiju-r.jpg" alt="Kaiju R at 174 km/h: a SPLIT! worth +514"></td>
+    <td><img src="docs/screenshots/voltage-gt.jpg" alt="Voltage GT at 172 km/h: a SPLIT! worth +474"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/rotor-fx.jpg" alt="Rotor FX at 230 km/h: a SPLIT! with a x1.75 multiplier"></td>
+    <td><img src="docs/screenshots/busted.jpg" alt="BUSTED: the banner at 0 km/h with a police car alongside"></td>
+    <td><img src="docs/screenshots/rotor-fx.jpg" alt="Rotor FX at 194 km/h: a SPLIT! worth +1,223"></td>
   </tr>
 </table>
 
-<sub>All images are unedited frames rendered by the game (version 0.3.0). Driving shots are autopilot runs, so the car is not always at full speed; the title and results shots use a fresh profile, the garage shots a test profile with everything unlocked.</sub>
+<sub>All images are unedited frames rendered by the game (version 0.3.1). Driving shots are autopilot runs, so the car is not always at full speed; the title and results shots use a fresh profile, the garage shots a test profile with everything unlocked.</sub>
 
 <details>
-<summary>The whole fleet: all 35 vehicle models, rear three-quarter view</summary>
+<summary>The whole fleet: all 34 vehicle models, rear three-quarter view</summary>
 
 <p align="center">
-  <img src="docs/fleet.jpg" alt="Contact sheet of every vehicle model at night: 29 traffic and police models (sedans, hatchbacks, SUVs, pickups, taxis, vans, muscle and sports cars, police cars including the interceptor SUV and pursuit coupe, an ambulance, a bus and trucks), then the six garage cars: Voltage GT, Naga X, Kaze RT, Kaiju R, Rotor FX and Naga XR" width="860">
+  <img src="docs/fleet.jpg" alt="Contact sheet of every vehicle model at night: 29 traffic and police models (sedans, hatchbacks, SUVs, pickups, taxis, vans, muscle and sports cars, police cars including the interceptor SUV and pursuit coupe, an ambulance, a bus and trucks), then the five garage cars: Voltage GT, Naga XR, Kaze RT, Kaiju R and Rotor FX" width="860">
 </p>
 
 Rendered with `tools/wheel_sheet.tscn`. The tests also audit every traffic model's wheels numerically.
