@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
-"""Kaiju R: boxy late-90s AWD twin-turbo super-coupe (fictional brand). Squared flared arches,
+"""Kaiju R (procedural, legacy; the garage ships the Meshy Kaiju R, tools/meshy/specs/kaiju.py): boxy late-90s AWD twin-turbo super-coupe (fictional brand). Squared flared arches,
 flat vented hood, upright glasshouse, notchback trunk with a pylon wing, four round tail lamps.
 Run: Blender --background --python tools/blender/kaiju_r.py -- [--preview <prefix>]
-Writes assets/cars/kaiju/kaiju_r.glb."""
+Writes assets/cars/kaiju/kaiju_r_procedural.glb (not shipped; it no longer overwrites the Meshy model)."""
 import os
 import sys
 import math
@@ -111,6 +111,6 @@ for nm, ay, s in (("WheelFL", AX_F, -1), ("WheelFR", AX_F, 1), ("WheelRL", AX_R,
 
 K.report("kaiju")
 a = C.args()
-C.export(os.path.join(C.ROOT, "assets/cars/kaiju/kaiju_r.glb"))
+C.export(os.path.join(C.ROOT, "assets/cars/kaiju/kaiju_r_procedural.glb"))
 if "--preview" in a:
     C.preview(a[a.index("--preview") + 1], LEN, 1.34, views=("front34", "side", "rear34", "top", "chase"))

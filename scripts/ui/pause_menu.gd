@@ -20,6 +20,7 @@ var _settings: SettingsMenu
 
 
 func _ready() -> void:
+	UiSfx.play("ui_open")
 	layer = 15
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_panel = Control.new()
@@ -56,6 +57,7 @@ func _ready() -> void:
 
 
 func _resume() -> void:
+	UiSfx.play("ui_close")
 	resumed.emit()
 
 

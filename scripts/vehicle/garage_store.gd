@@ -14,7 +14,7 @@ static func load_last(path := "") -> String:
 	var cf := ConfigFile.new()
 	if cf.load(path if path != "" else file) != OK:
 		return ""
-	return String(cf.get_value("garage", "car", ""))
+	return CarCatalog.canonical(String(cf.get_value("garage", "car", "")))  # retired ids -> replacement
 
 
 static func save_last(id: String, path := "") -> Error:

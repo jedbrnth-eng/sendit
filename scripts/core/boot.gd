@@ -13,10 +13,11 @@ extends Node
 ##   --settings-file=<path>  read/write settings there instead of user://settings.cfg
 ##   --garage-file=<path>    read/write the last chosen car there instead of user://garage.cfg
 ##   --profile-file=<path>  read/write the progression profile there instead of user://profile.cfg
+##   --no-bake               build road furniture per chunk instead of shared baked meshes (perf A/B)
 ##   --loadout=a,b,c     proof: force those garage items onto the player car (never saved)
 ##   --plate=TEXT        proof: plate text (filtered)
 ##   --windowed          ignore the saved fullscreen setting
-##   --mirrors=off|rear|all  override the mirror setting for this run (perf A/B, proof shots)
+##   --mirrors=off|top|sides|all  override the mirror setting for this run (perf A/B, proof shots)
 
 var args: Dictionary = {}
 
@@ -50,6 +51,8 @@ func _ready() -> void:
 		GarageStore.file = String(arg("garage-file"))
 	if has_arg("profile-file"):
 		ProfileStore.file = String(arg("profile-file"))
+	if has_arg("no-bake"):  # A/B: build chunk furniture per chunk (no shared baked meshes)
+		Highway.bake = false
 	var st := Settings.get_current()
 	st.load_from()
 	st.apply(get_tree())

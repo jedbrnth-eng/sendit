@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>A night-highway traffic racer. Thread the gaps, chain the combo, bank it before you wreck.</b><br>
-  Three minutes, three lives, 84 cars of traffic, junk on the hard shoulder and a police force that wants a word. Six cars to unlock and tune, mirrors to watch your back and a replay of your best gaps. Free, open source, Godot 4.
+  Three minutes, three lives, 84 cars of traffic, junk on the hard shoulder and a police force that wants a word. Five cars to unlock and tune, mirrors to watch your back and a replay of your best gaps. Free, open source, Godot 4.
 </p>
 
 <p align="center">
@@ -30,11 +30,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3 tour: title screen, car select and paint garage with the new Naga XR pickup, the Naga XR and Kaze RT threading traffic at 175 to 250 km/h with SPLIT! popups, mirror frames flashing red with police behind, a crash into a barrel on the hard shoulder, the replay cam with its GAP 4/4 SPLIT caption, then the results screen with LEVEL UP" width="860"></a><br>
-  <sub>Rendered by the game itself, autopilot driving (a light preview, 512×288 at 16 fps, 15 seconds). <a href="docs/demo.mp4">Watch the 34-second video in full quality</a>.</sub>
+  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3.1 tour: title screen, car select, cars threading traffic in a police pursuit with mirrors lit by the cops behind, a wreck on the hard shoulder, the replay cam with its GAP 2/4 SPLIT caption, then the results screen with LEVEL UP" width="860"></a><br>
+  <sub>Rendered by the game itself, autopilot driving (a light preview, 512×288 at 16 fps, 15 seconds). <a href="docs/demo.mp4">Watch the 31-second video in full quality</a>.</sub>
 </p>
 
-> **Status: early release (0.3).** New in 0.3: rear-view and side mirrors, an end-of-round replay cam, the Naga XR pickup, rebuilt Kaze RT and Kaiju R, a Thai roadside and two new police cars at high heat. Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
+> **Status: early release (0.3.1).** New in 0.3.1: much harder police (telegraphed shoves, rolling roadblocks from heat 3, faster backup), four mirror modes, smoother streaming, a new synthesized sound set, and the Naga XR is now the free level-3 pickup (the old Naga X is retired). Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
 
 ---
 
@@ -87,10 +87,10 @@ You have **three minutes** and **three wrecks**. Drive fast down a rain-slick hi
 - **Thread gaps.** Pass traffic above 80 km/h with a close clearance to score. The faster and tighter the pass, the more it's worth, and squeezing between two cars (a **SPLIT**) pays extra.
 - **Chain the combo.** Each gap in a row raises your multiplier. The combo points stay *live* while the 3-second window is open.
 - **Bank it.** When the window runs out without a wreck, the points are banked for good. A wreck wipes whatever is still live and costs a life.
-- **Watch for the police.** Pass a patrol car above 140 km/h and it gives chase: chasers weave through traffic, box you in and ram. At higher heat an interceptor SUV and a pursuit coupe join in. Fill the **BUSTED** half of the meter and the run is over; keep your foot down and fill **EVADE** to escape for a bonus. Check your mirrors: their frames flash red and blue when a lit cop is behind you.
+- **Watch for the police.** They are much harder in 0.3.1. Pass a patrol car above 140 km/h and it gives chase, often two at once, with backup arriving every few seconds. Chasers weave through traffic, box you in and shove: just before a shove the cop's light bar strobes white and the siren whoops, so steer away. From heat 3 a rolling roadblock forms up across the road ahead, always leaving one lane open. At higher heat an interceptor SUV and a pursuit coupe join in. Slow down with a cop on top of you and you're **BUSTED**; keep your foot down and fill **EVADE** to escape for a bonus (the full bonus only after a 20-second chase). Check your mirrors: their frames flash red and blue when a lit cop is behind you.
 - **Mind the shoulder.** Cones, barrels, debris, signs, water barriers and broken-down cars sit on the hard shoulder. Hit one and it's a wreck, and gaps don't score while you ride the shoulder.
 
-**Level up between runs.** Every run pays XP and credits for your banked score, gaps, distance, best combo, police escapes and a clean run, plus three run goals at a time. Levels unlock 70 items: five more cars plus paint colours, finishes, wraps, rims, headlights, underglow, exhaust flames, engine tones and number plates; spend credits to buy them, then fit them to each car in the garage. Every round has a fresh random layout of traffic and hazards.
+**Level up between runs.** Every run pays XP and credits for your banked score, gaps, distance, best combo, police escapes and a clean run, plus three run goals at a time. Levels unlock 69 items: four more cars (the Naga XR pickup is free at level 3) plus paint colours, finishes, wraps, rims, headlights, underglow, exhaust flames, engine tones and number plates; spend credits to buy them, then fit them to each car in the garage. Every round has a fresh random layout of traffic and hazards.
 
 When the round ends, the **replay cam** shows your best gaps from trackside cameras before the results.
 
@@ -105,11 +105,11 @@ Your level, credits, garage and personal best are saved on your computer and sho
 | `A` `D` / `←` `→` | Steer |
 | `Space` | Handbrake |
 | `C` | Change camera (chase, hood) |
-| `M` | Mirrors: off, rear-view only, rear-view and side mirrors |
+| `M` | Mirrors: cycles OFF, TOP (rear-view only), SIDES (side mirrors only) and ALL |
 | `R` | Restart the run; on the results screen, watch the replay again |
 | `Enter` / `Space` / `Esc` | Skip the replay |
 | `F11` or `Alt`+`Enter` | Fullscreen (saved, same as the setting) |
-| `Esc` | Pause menu during a run (resume, settings, restart, quit to title); settings on the title screen |
+| `Esc` | Pause menu during a run (resume, settings, restart, quit to title); Settings on the title screen |
 | Any other key | Title screen: go to car select |
 
 **Car select and garage:** `A` `D` or arrows to change car or item, `Q` `E` to switch tabs (CAR, PAINT, WHEELS, LIGHTS, EXTRAS), `W` `S` to pick a row, `Enter` to buy or fit an item (or drive, on the CAR tab), `Space` to drive from any tab, `Esc` to go back.
@@ -120,42 +120,42 @@ Gamepads work too: right and left trigger for throttle and brake, left stick to 
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/title.jpg" alt="Title screen: SEND IT wordmark, level 1 panel with the next unlock and three run goals, version v0.3.0"></td>
+    <td><img src="docs/screenshots/title.jpg" alt="Title screen: SEND IT wordmark, level 1 panel with the next unlock and three run goals"></td>
     <td><img src="docs/screenshots/car-select.jpg" alt="Car select: the Naga XR wrapped pickup on a neon turntable with speed, accel, handling and toughness bars"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/garage.jpg" alt="Garage PAINT tab: the Naga XR wrap recoloured cobalt, with colour, finish and wrap rows"></td>
-    <td><img src="docs/screenshots/mirrors.jpg" alt="Mirrors in a pursuit at 162 km/h: rear-view and side mirrors with their frames glowing red as police chase from behind"></td>
+    <td><img src="docs/screenshots/garage.jpg" alt="Garage PAINT tab: the Naga XR wrap recoloured Pulse Red, with colour, finish and wrap rows"></td>
+    <td><img src="docs/screenshots/mirrors.jpg" alt="Mirrors in a pursuit at 74 km/h: the top rear-view and the side mirrors with blue-lit frames, a police car behind"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/replay.jpg" alt="Replay cam: trackside shot of the Voltage GT with letterbox bars and the caption GAP 4/4, +1,578, 0.30 m, 189 km/h, SPLIT"></td>
-    <td><img src="docs/screenshots/results.jpg" alt="Results: 4,364 banked, NEW BEST, LEVEL UP to 2, +251 XP and +275 credits, an unlocked paint colour, R to watch the replay"></td>
+    <td><img src="docs/screenshots/replay.jpg" alt="Replay cam: trackside shot of the Naga XR with letterbox bars and the caption GAP 2/4, +1,539, 1.58 m, 218 km/h, SPLIT"></td>
+    <td><img src="docs/screenshots/results.jpg" alt="Results: 14,991 banked, NEW BEST, LEVEL UP to 3, +963 XP, unlocked items listed, R to watch the replay"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/hazards.jpg" alt="Shoulder hazards at 190 km/h: traffic cones and a drum barrel on the hard shoulder ahead of the Voltage GT"></td>
-    <td><img src="docs/screenshots/pursuit.jpg" alt="Pursuit at HEAT 5, seen from the pursuit camera: the Kaze RT (left) boxed in by three cops, including the new interceptor SUV (right)"></td>
+    <td><img src="docs/screenshots/hazards.jpg" alt="Shoulder crash at 47 km/h: a WRECK banner after hitting a cone on the hard shoulder"></td>
+    <td><img src="docs/screenshots/pursuit.jpg" alt="Pursuit: a police car right behind the Voltage GT as it banks its combo, the PURSUIT bar showing"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/naga-xr.jpg" alt="Naga XR wrapped pickup at 175 km/h: a SPLIT! in a pursuit, x1.50 multiplier"></td>
-    <td><img src="docs/screenshots/kaze-rt.jpg" alt="Kaze RT at 248 km/h: a SPLIT! with a x1.75 multiplier"></td>
+    <td><img src="docs/screenshots/naga-xr.jpg" alt="Naga XR at 239 km/h: a SPLIT! worth +5,786"></td>
+    <td><img src="docs/screenshots/kaze-rt.jpg" alt="Kaze RT at 169 km/h in a pursuit: a SPLIT! worth +2,158"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/kaiju-r.jpg" alt="Kaiju R at 154 km/h: a SPLIT! with a x2.00 multiplier"></td>
-    <td><img src="docs/screenshots/voltage-gt.jpg" alt="Voltage GT at 203 km/h: a SPLIT! between two cars"></td>
+    <td><img src="docs/screenshots/kaiju-r.jpg" alt="Kaiju R at 174 km/h: a SPLIT! worth +514"></td>
+    <td><img src="docs/screenshots/voltage-gt.jpg" alt="Voltage GT at 172 km/h: a SPLIT! worth +474"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/naga-x.jpg" alt="Naga X widebody pickup at 189 km/h: a SPLIT! in a pursuit, x2.00 multiplier"></td>
-    <td><img src="docs/screenshots/rotor-fx.jpg" alt="Rotor FX at 230 km/h: a SPLIT! with a x1.75 multiplier"></td>
+    <td><img src="docs/screenshots/busted.jpg" alt="BUSTED: the banner at 0 km/h with a police car alongside"></td>
+    <td><img src="docs/screenshots/rotor-fx.jpg" alt="Rotor FX at 194 km/h: a SPLIT! worth +1,223"></td>
   </tr>
 </table>
 
-<sub>All images are unedited frames rendered by the game (version 0.3.0). Driving shots are autopilot runs, so the car is not always at full speed; the title and results shots use a fresh profile, the garage shots a test profile with everything unlocked.</sub>
+<sub>All images are unedited frames rendered by the game (version 0.3.1). Driving shots are autopilot runs, so the car is not always at full speed; the title and results shots use a fresh profile, the garage shots a test profile with everything unlocked.</sub>
 
 <details>
-<summary>The whole fleet: all 35 vehicle models, rear three-quarter view</summary>
+<summary>The whole fleet: all 34 vehicle models, rear three-quarter view</summary>
 
 <p align="center">
-  <img src="docs/fleet.jpg" alt="Contact sheet of every vehicle model at night: 29 traffic and police models (sedans, hatchbacks, SUVs, pickups, taxis, vans, muscle and sports cars, police cars including the interceptor SUV and pursuit coupe, an ambulance, a bus and trucks), then the six garage cars: Voltage GT, Naga X, Kaze RT, Kaiju R, Rotor FX and Naga XR" width="860">
+  <img src="docs/fleet.jpg" alt="Contact sheet of every vehicle model at night: 29 traffic and police models (sedans, hatchbacks, SUVs, pickups, taxis, vans, muscle and sports cars, police cars including the interceptor SUV and pursuit coupe, an ambulance, a bus and trucks), then the five garage cars: Voltage GT, Naga XR, Kaze RT, Kaiju R and Rotor FX" width="860">
 </p>
 
 Rendered with `tools/wheel_sheet.tscn`. The tests also audit every traffic model's wheels numerically.
@@ -164,32 +164,36 @@ Rendered with `tools/wheel_sheet.tscn`. The tests also audit every traffic model
 
 ## Performance
 
-Measured on an **Apple M4 Max MacBook Pro**, running from source with `tools/perf.sh`: 1920×1080, vsync off, autopilot driving 1,500 frames on seed 7 with a forced police pursuit, while the machine's load average was between 3.4 and 4.6 (other work was running). Each row is the median of 3 to 8 runs taken back to back, alternating the settings.
+What was measured for 0.3.1, and only that: **CPU time per frame**, headless (no rendering), on an **Apple M4 Max MacBook Pro** running from source with `tools/ab_cpu.py`. Autopilot drove 3,600 frames on seed 7 with a forced police pursuit (`--pursuit=90`), 5 runs per build, interleaved (0.3.0, 0.3.1, 0.3.0, ...). The machine was heavily loaded by other work (load average 13 to 21), so treat the numbers as a rough guide.
 
-| Build and mirrors | Average frame time | Draw calls per frame | Triangles per frame |
-|---|---|---|---|
-| 0.2.0, no mirrors | 8.3 ms | about 3,600 | about 700,000 |
-| 0.3.0, mirrors off | 8.4 ms | about 3,600 | about 820,000 |
-| 0.3.0, rear-view only | 9.2 ms | about 4,200 | about 910,000 |
-| 0.3.0, all three mirrors (default) | 9.1 ms | about 4,200 | about 920,000 |
+| Build | CPU time per frame (median of 5) | Fastest run |
+|---|---|---|
+| 0.3.0 | 4.97 ms | 4.02 ms |
+| 0.3.1 | 3.12 ms | 2.15 ms |
 
-The mirrors cost about 0.7 ms a frame here. Only one mirror view is drawn per frame, so all three cost about the same as the rear-view alone. Hitches were the bigger problem. In one 4-minute pursuit that reached heat 4, two frames took 66 and 70 ms. Building a new police car for the first time takes about 100 ms, and loading a prop for the first time takes 10 to 60 ms. 0.3.0 now does both when the round starts, and the worst frame in the same run dropped to 31 ms. A few 25 to 35 ms frames remain (0.2.0 has them too).
+That is about 37% less CPU work per frame (which change saved how much was not measured separately). The two builds do not drive exactly the same run (0.3.1 changes the police and the cars, so the end-of-run `RUN_STATS` differ slightly), so this is a comparison of the same scenario, not of identical frames. **Not measured for 0.3.1:** GPU or render frame time, draw calls and hitches (the 0.3.0 figures in its release notes are not re-measured here). Mirror cost: only one mirror view is drawn per frame, and 0.3.1 starts with the top mirror only.
 
-The game is **GPU-heavy by design**: Forward+ rendering, 2× MSAA, glow, screen-space reflections, SSAO, volumetric fog and dense traffic. On a slower GPU, open **Settings** (`Esc` on the title screen) and try the **LOW** quality preset (it also turns the side mirrors off and keeps the rear-view), set **Mirrors** to REAR or OFF, or lower shadows, glow and draw distance. I haven't measured any other hardware yet, so if you try it, please [open an issue](https://github.com/jedbrnth-eng/sendit/issues/new/choose) with your frame rate.
+The game is **GPU-heavy by design**: Forward+ rendering, 2× MSAA, glow, screen-space reflections, SSAO, volumetric fog and dense traffic. **AUTO quality** (on by default) steps graphics down one tier if the slowest frames stay over 25 ms for 5 seconds. On a slower GPU, open **Settings** (`Esc` on the title screen) and try the **LOW** quality preset (it turns the mirrors off), set **Mirrors** to TOP or OFF, or lower shadows, glow and draw distance. I haven't measured any other hardware yet, so if you try it, please [open an issue](https://github.com/jedbrnth-eng/sendit/issues/new/choose) with your frame rate.
+
+## Sound
+
+0.3.1 replaces most of the audio with sounds synthesized by SendIt's own scripts in `tools/audio/`: a layered engine with three characters (V8, turbo straight-six, rotary) and load and overrun loops, road loops (tyre roll, rumble strip, shoulder grit, barrier scrape), crashes graded by severity, score and menu sounds, and police sirens, shove whoops and roadblock air horns. The recorded pass-bys, tyre squeal, road roar and wind are kept. Everything runs through separate buses with ducking under crashes and a limiter on the master.
+
+It was checked with measurements (loudness, peaks, clicks) and an automatic classifier, **not by ear on a range of speakers**, and some sounds still read as synthetic. Judge it by ear: `docs/audio-demo/scenario_before.ogg` (0.3.0) and `scenario_after.ogg` play the same 60-second scenario, and [`docs/audio-audit.md`](docs/audio-audit.md) has the numbers.
 
 ## What's inside
 
 - **A streamed highway.** A 4+4 lane road generated as you drive, with sign gantries, sodium lamp pools, wet-road reflections and a procedural glass skyline matched to a Shanghai night HDRI.
 - **Traffic with manners.** 84 cars follow each other with the Intelligent Driver Model, change lanes only when there's room, and get knocked aside when you hit them.
-- **Police with a plan.** Patrols and parked cops, a chase brain that weaves, boxes and rams, heat levels that bring in faster units, and difficulty that grows with distance.
+- **Police with a plan.** Patrols and parked cops, a chase brain that weaves, boxes and shoves (with a white-strobe and whoop warning first), rolling roadblocks from heat 3, heat levels that bring in faster units, and difficulty that ramps up quickly with distance.
 - **Hazards on the hard shoulder.** Cones, drum barrels, tyres, crates, pallets, planks, ladders, chevron signs, warning triangles, water and Jersey barriers and broken-down cars, laid out from each round's seed.
 - **A Thai roadside.** Palms, bus shelters, motorbike-taxi stands, spirit-house shrines, food stalls, parked tuk-tuks, neon shop signs in Thai and English, bare expressway piers and lane-signal gantries beyond the barriers.
-- **Mirrors.** A rear-view mirror and two side mirrors (`M` cycles off, rear-view only, all three). The frame flashes red and blue when a lit police car is behind you.
+- **Mirrors.** A rear-view mirror and two side mirrors (`M` cycles OFF, TOP, SIDES and ALL; new settings start with TOP). The frame flashes red and blue when a lit police car is behind you.
 - **Replay cam.** At the end of a round the game replays up to four of your best gaps from trackside cameras, with a slow-motion moment and a caption. Press `R` on the results screen to watch it again, or turn it off in Settings.
-- **Six drivable cars** with their own handling, hitbox, camera and engine pitch: the **Voltage GT** (the all-rounder), the **Naga X** widebody pickup, the **Kaze RT** fastback (top speed), the boxy **Kaiju R** (heavy, hard to kill), the light, twitchy **Rotor FX** and the wrapped **Naga XR** street pickup (level 20). The Naga X and Rotor FX are built by the Blender scripts in `tools/blender/`; the Naga XR, Kaze RT and Kaiju R were made with Meshy and cleaned up by the scripts in `tools/meshy/`.
-- **A garage and progression.** Levels, XP, credits, run goals and 80 garage items (10 starters, 70 to earn, cars included), each car with its own loadout, saved to `profile.cfg`.
+- **Five drivable cars** with their own handling, hitbox, camera and engine sound: the **Voltage GT** (the all-rounder), the wrapped **Naga XR** street pickup (free at level 3), the **Kaze RT** fastback (top speed, level 5), the boxy **Kaiju R** (heavy, hard to kill, level 10) and the light, twitchy **Rotor FX** (level 15). The Rotor FX is built by the Blender scripts in `tools/blender/`; the Naga XR, Kaze RT and Kaiju R were made with Meshy and cleaned up by the scripts in `tools/meshy/`. The 0.2 Naga X pickup is retired, and saves that used it move to the Naga XR.
+- **A garage and progression.** Levels, XP, credits, run goals and 79 garage items (10 starters, 69 to earn, cars included), each car with its own loadout, saved to `profile.cfg`.
 - **Settings.** Volume (master, music, effects), a quality preset or separate shadows, glow and draw distance, mirrors and mirror size, replay on or off, fullscreen, field of view, starting camera and keyboard rebinding, saved to `settings.cfg`.
-- **29 traffic and police models** (including an interceptor SUV from heat 3 and a pursuit coupe from heat 4) with glowing lamps and flares, rolling and steering wheels, and an engine sound model with gears and a redline, plus recorded pass-by, crash and siren audio.
+- **29 traffic and police models** (including an interceptor SUV from heat 3 and a pursuit coupe from heat 4) with glowing lamps and flares, rolling and steering wheels, and a synthesized engine with gears and a redline, plus recorded pass-by audio (see [Sound](#sound)).
 - **Collisions that follow the car's angle.** Contacts use rotated, body-sized boxes, so a car turned mid lane-change hits where it looks like it should, and a car you hit stays solid.
 - **Smooth by design.** Physics interpolation, a camera that follows the interpolated car, ramped keyboard steering and eased lane changes, each covered by tests.
 
@@ -210,11 +214,11 @@ Boot (input map, launch args, Settings) ─► Main ─► Highway (streams road
 - **Scenes are built in code**, so every change shows up in a diff. `main.tscn` is a single node.
 - **`CarModel`** normalises any glTF car: it scales to a target length, finds where the tyres touch the road, adds lamp lenses and flares, and rigs each wheel with a spin pivot (single tyres and whole-axle meshes both work).
 - **`GapScorer`**, **`PassRules`**, **`RunReward`**, **`XpCurve`**, **`UnlockCatalog`** and **`Settings`** are pure logic with no nodes, so scoring, rewards and settings are unit-tested directly.
-- **Audio** is mixed in a bus layout with a hard limiter, per-gear engine loops and recorded pass-by clips.
+- **Audio** is mixed in a bus layout (engine, road, siren, effects, UI, music) with ducking and a limiter on the master.
 
 ## Testing
 
-`tools/gate.sh` is the one command that matters. It imports the project, runs **231 unit tests** headless, then drives the car on autopilot for 600 frames and fails on any `SCRIPT ERROR` or `ERROR` line. CI runs it on every push and pull request; the Release workflow runs it again, exports all three platforms, and launches each exported build on its own operating system before publishing.
+`tools/gate.sh` is the one command that matters. It imports the project, runs **297 unit tests** headless, then drives the car on autopilot for 600 frames and fails on any `SCRIPT ERROR` or `ERROR` line. CI runs it on every push and pull request; the Release workflow runs it again, exports all three platforms, and launches each exported build on its own operating system before publishing.
 
 Notable tests: scoring maths and pass validity, mirror modes and per-car mirror anchors, the replay recorder (bounded memory, 30 Hz sampling, it never changes the run) and its highlight picker, Meshy model budgets (triangles, file size, our own material names, no brand words), rotated-box contacts (including the struck-car exploit), shoulder hazards, XP and credit caps, unlocks and goals, profile and settings save files (including a corrupt file), traffic and highway streaming, police rules and chase brain, handling and smoothness guarantees, audio loop import settings (a past click bug), a wheel-rig audit of every traffic model at every spin angle, and a licence check that every asset is credited.
 
@@ -247,10 +251,10 @@ In Godot's per-user data folder: `~/Library/Application Support/Godot/app_userda
 Yes. See [Controls](#controls).
 
 **Can I mod it or use the assets?**
-The code is GPL-3.0. Each asset keeps its own licence, listed in [CREDITS.md](CREDITS.md) (mostly CC0; the Blender-built cars are original work under GPL-3.0, and the Meshy-made cars and props are owned by the project and released under GPL-3.0). The Voltage GT is modified from a CC BY 4.0 model and needs attribution.
+The code is GPL-3.0. Each asset keeps its own licence, listed in [CREDITS.md](CREDITS.md) (mostly CC0; the Blender-built Rotor FX is original work under GPL-3.0, and the Meshy-made cars and props are owned by the project and released under GPL-3.0). The Voltage GT is modified from a CC BY 4.0 model and needs attribution.
 
 **Is there multiplayer or more tracks?**
-Not yet. 0.3 is one track, six cars with a garage, and a three-minute score attack. Ideas are welcome as [feature requests](https://github.com/jedbrnth-eng/sendit/issues/new/choose).
+Not yet. 0.3 is one track, five cars with a garage, and a three-minute score attack. Ideas are welcome as [feature requests](https://github.com/jedbrnth-eng/sendit/issues/new/choose).
 
 ## Privacy
 
@@ -270,7 +274,7 @@ scripts/ci/    pinned Godot install, exported-build smoke tests, installer test,
 
 ## Credits
 
-Cars, city kit, textures, HDRIs, sounds and fonts come from CC0 and openly licensed packs by Kenney, Quaternius, Poly Haven, ambientCG, BigSoundBank and others. The Voltage GT is modified from *CarConcept* by Eric Chadwick (© 2024 Darmstadt Graphics Group GmbH), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The Naga X and Rotor FX are original models made for SendIt in Blender. The Naga XR, Kaze RT and Kaiju R, the two new police cars and the shoulder and roadside props were generated with Meshy on the owner's paid Pro plan (whose terms give the customer ownership of the output, so they are not CC0), cleaned up by the SendIt scripts in `tools/meshy`, checked for real logos, and released under this repository's GPL-3.0. The full list with links and licences is in [`CREDITS.md`](CREDITS.md). All brands in the game are fictional.
+Cars, city kit, textures, HDRIs, recorded sounds and fonts come from CC0 and openly licensed packs by Kenney, Quaternius, Poly Haven, ambientCG, BigSoundBank and others. The Voltage GT is modified from *CarConcept* by Eric Chadwick (© 2024 Darmstadt Graphics Group GmbH), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The Rotor FX is an original model made for SendIt in Blender. The Naga XR, Kaze RT and Kaiju R, the two new police cars and the shoulder and roadside props were generated with Meshy on the owner's paid Pro plan (whose terms give the customer ownership of the output, so they are not CC0), cleaned up by the SendIt scripts in `tools/meshy`, checked for real logos, and released under this repository's GPL-3.0. The full list with links and licences is in [`CREDITS.md`](CREDITS.md). Most of the sound is synthesized by the scripts in `tools/audio/` and dedicated to the public domain (CC0) by the owner. All brands in the game are fictional.
 
 ## License
 

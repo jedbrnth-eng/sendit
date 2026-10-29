@@ -147,3 +147,35 @@ func test_meshy_assets_are_credited_as_meshy_not_cc0() -> void:
 		runner.check(row != "", "CREDITS.md has a row for " + path)
 		runner.check(row.contains("Generated with Meshy") and row.contains("Pro plan"), "%s row says it is Meshy Pro output" % path)
 		runner.check(not row.split("|")[3].contains("CC0"), "%s is not claimed as CC0" % path)
+
+
+## The CREDITS.md row whose path column is exactly `path` ("" if none).
+func _row_for(path: String) -> String:
+	for line in _read("res://CREDITS.md").split("\n"):
+		var cols := line.split("|")
+		if cols.size() >= 5 and cols[2].strip_edges() == path:
+			return line
+	return ""
+
+
+func test_synthesized_audio_is_credited_as_own_cc0() -> void:
+	# 0.3.1: these sets are made by tools/audio/synth_*.py with no recorded input.
+	for path in ["assets/sfx/engine", "assets/sfx/road", "assets/sfx/crash", "assets/sfx/traffic", "assets/sfx/score", "assets/sfx/ui", "assets/sfx/police"]:
+		var row := _row_for(path)
+		runner.check(row != "", "CREDITS.md has a row for " + path)
+		runner.check(row.split("|")[3].strip_edges() == "CC0" if row != "" else false, "%s is CC0" % path)
+		runner.check(row.contains("own synthesis") and row.contains("tools/audio/synth_"), "%s names its generator script" % path)
+
+
+func test_recorded_audio_names_its_source_page() -> void:
+	# Third-party recordings keep a link to the page that states their licence.
+	for path in ["assets/sfx/tire-squeal-s0500.ogg", "assets/sfx/cut/passby_*.ogg", "assets/sfx/road_roar_loop.wav", "assets/sfx/wind_loop.wav"]:
+		var row := _row_for(path)
+		runner.check(row != "" and row.contains("https://"), "CREDITS.md row with a source link for " + path)
+
+
+func test_retired_naga_x_is_gone() -> void:
+	# 0.3.1 retired the Naga X (saves migrate naga -> naga_xr); no model, generator or credit row left.
+	runner.check(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path("res://assets/cars/naga")), "assets/cars/naga is removed")
+	runner.check(not FileAccess.file_exists("res://tools/blender/naga_pickup.py"), "the Naga X generator is removed")
+	runner.check(_row_for("assets/cars/naga") == "", "no CREDITS.md row for the Naga X")

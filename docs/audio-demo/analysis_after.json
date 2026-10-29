@@ -1,0 +1,85 @@
+{
+ "lufs_i": -15.6,
+ "lra": 3.3,
+ "true_peak_dbtp": -1.9,
+ "dur_s": 60.05,
+ "peak_dbfs": -2.13,
+ "clipped_samples": 0,
+ "clicks_total": 163,
+ "clicks_steady": 1,
+ "clicks_rel": 9,
+ "clicks_rel_times": [
+  31.673,
+  31.681,
+  35.296,
+  36.264,
+  37.263,
+  40.059,
+  40.111,
+  40.711,
+  43.52
+ ],
+ "errors": [],
+ "sections": {
+  "idle+count": {
+   "lufs": -23.5,
+   "tp": -8.4,
+   "centroid_hz": 109,
+   "rms_dbfs": -20.7
+  },
+  "accel": {
+   "lufs": -15.4,
+   "tp": -3.3,
+   "centroid_hz": 361,
+   "rms_dbfs": -14.5
+  },
+  "lift": {
+   "lufs": -16.2,
+   "tp": -6.2,
+   "centroid_hz": 262,
+   "rms_dbfs": -14.9
+  },
+  "cruise": {
+   "lufs": -15.1,
+   "tp": -6.0,
+   "centroid_hz": 309,
+   "rms_dbfs": -14.1
+  },
+  "weave": {
+   "lufs": -13.9,
+   "tp": -4.9,
+   "centroid_hz": 739,
+   "rms_dbfs": -13.6
+  },
+  "shoulder": {
+   "lufs": -15.1,
+   "tp": -5.3,
+   "centroid_hz": 397,
+   "rms_dbfs": -14.1
+  },
+  "crash": {
+   "lufs": -16.9,
+   "tp": -1.9,
+   "centroid_hz": 553,
+   "rms_dbfs": -15.7
+  },
+  "cone": {
+   "lufs": -17.4,
+   "tp": -9.0,
+   "centroid_hz": 287,
+   "rms_dbfs": -16.1
+  },
+  "police": {
+   "lufs": -14.6,
+   "tp": -3.3,
+   "centroid_hz": 396,
+   "rms_dbfs": -14.0
+  },
+  "end": {
+   "lufs": -17.7,
+   "tp": -5.2,
+   "centroid_hz": 424,
+   "rms_dbfs": -16.6
+  }
+ }
+}

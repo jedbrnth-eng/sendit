@@ -72,7 +72,10 @@ func _process(_d: float) -> void:
 	_wait -= 1
 	if _wait > 0:
 		return
+	_wait = 1 << 30  # frames that run while we wait for the draw must not save (or advance) again
 	await RenderingServer.frame_post_draw
+	if _i >= _models.size():
+		return
 	var name_s := String(_models[_i][0]).get_file().get_basename()
 	get_viewport().get_texture().get_image().save_png("%s/%02d_%s.png" % [_out, _i, name_s])
 	_i += 1

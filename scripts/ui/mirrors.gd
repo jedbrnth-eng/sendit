@@ -9,8 +9,8 @@ class_name Mirrors extends CanvasLayer
 ## is a separate layer). Small rounded frames, soft vignette, far-distance blur. Police lights
 ## and headlights behind you show up in them: you see the cops coming.
 ##
-## Mode (Settings "mirrors", the M key cycles OFF -> REAR -> ALL) and size ("mirror_size") apply
-## live; --mirrors=off|rear|all overrides for one run. Rules/anchors: MirrorConfig.
+## Mode (Settings "mirrors", the M key cycles OFF -> TOP ONLY -> SIDES ONLY -> ALL) and size ("mirror_size") apply
+## live; --mirrors=off|top|sides|all overrides for one run. Rules/anchors: MirrorConfig.
 
 const GROUP := &"mirrors"
 const SHADER := """
@@ -97,7 +97,7 @@ func apply_settings(s: Settings) -> void:
 	_layout()
 
 
-## M: OFF -> REAR -> ALL (saved, like the settings menu).
+## M: OFF -> TOP ONLY -> SIDES ONLY -> ALL (saved, like the settings menu).
 func cycle() -> void:
 	_arg_mode = -1
 	settings.set_value("mirrors", MirrorConfig.next_mode(mode))
@@ -201,13 +201,16 @@ func _build_view(kind: String) -> Dictionary:
 	vp.positional_shadow_atlas_size = 0      # no headlight shadows in the mirrors
 	vp.mesh_lod_threshold = 4.0
 	vp.audio_listener_enable_3d = false
+	vp.name = "Mirror_" + kind
+	vp.add_to_group(PerfProbe.VP_GROUP)
 	add_child(vp)
 	var cam := Camera3D.new()
 	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	cam.near = 0.15
 	cam.far = 400.0
 	cam.fov = 19.0 if kind == "rear" else 30.0  # rear-view ~47 deg wide: a cop at 40 m still reads
-	cam.cull_mask = 0xFFFFF & ~2              # layer 2 = hero DRL blades (as the hood cam)
+	# Layer 2 = hero DRL blades (as the hood cam); MAIN_ONLY = the shadow-casting moon.
+	cam.cull_mask = 0xFFFFF & ~2 & ~NightEnvironment.MAIN_ONLY_LAYER
 	var attrs := CameraAttributesPractical.new()
 	attrs.dof_blur_far_enabled = true         # far traffic goes soft, like a small mirror
 	attrs.dof_blur_far_distance = 70.0

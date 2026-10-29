@@ -3,7 +3,8 @@
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
 extends RefCounted
-## Naga XR: the Meshy-generated widebody pickup (tools/meshy/*), added beside the hand-built Naga X.
+## Naga XR: the Meshy-generated widebody pickup (tools/meshy/*). It replaced the hand-built Naga X
+## (retired 2026-10-28; old "naga" saves map to it, tests/test_naga_migration.gd).
 ## It must be game-ready like the authored cars: real size, faces -Z, four spinning wheels, lamps
 ## front and back, a repaintable wrap, a fair hitbox, a modest triangle budget and no real brands.
 
@@ -15,15 +16,14 @@ const ALLOWED := ["NagaXR", "Wheel", "Wrap NagaXR", "Trim NagaXR", "Glass", "Hea
 	"Tyre", "Caliper", "Chrome", "Steel", "Arch", "naga_xr_wrap"]
 
 
-func test_naga_xr_is_a_new_garage_car_unlocked_late() -> void:
+func test_naga_xr_is_the_garage_pickup_unlocked_early() -> void:
 	runner.check(CarCatalog.has(ID), "Naga XR is in the garage")
-	runner.check(CarCatalog.has("naga"), "the hand-built Naga X stays")
+	runner.check(not CarCatalog.has("naga"), "the hand-built Naga X is retired")
 	var s := CarCatalog.spec(ID)
 	runner.check(s.name == "NAGA XR" and String(s.tagline) != "", "display name + tagline")
 	var it := UnlockCatalog.get_item("car_" + ID)
 	runner.check(not it.is_empty() and it.car == ID, "unlock entry car_naga_xr")
-	runner.check(int(it.get("level", 0)) == 20 and int(it.get("price", 0)) == 10000, "unlocks at level 20 for 10,000 CR")
-	runner.check(s.max_kmh >= CarCatalog.spec("naga").max_kmh, "the XR is no slower than the Naga X it upgrades")
+	runner.check(int(it.get("level", 0)) == 3 and int(it.get("price", 0)) == 0, "unlocks free at level 3 (the early truck)")
 
 
 func test_naga_xr_model_is_game_ready() -> void:

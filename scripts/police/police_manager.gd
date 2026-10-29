@@ -5,14 +5,18 @@
 class_name PoliceManager extends Node3D
 ## Police in the world: spawns patrol cops into traffic (and parked on the shoulder) at a rate
 ## that rises with distance, starts a pursuit when you blow past one (or hit one), drives the
-## chasers with CopBrain, calls backup, and reports ESCAPED / BUSTED. Rules live in Pursuit,
-## numbers in PoliceTuning.
+## chasers with CopBrain (telegraphed shoves via CopBrain.ram_tick), calls backup, rolls
+## roadblocks ahead from heat PoliceTuning.ROADBLOCK_HEAT, and reports ESCAPED / BUSTED. Rules
+## live in Pursuit, numbers in PoliceTuning.
 ##
 ## Launch args (after `--`):
 ##   --pursuit[=frame]   force a pursuit at that physics frame (default 90): a unit appears
 ##                       behind you with lights on (proof runs)
 ##   --dist=<m>          pretend you have already driven this far (jumps the difficulty)
 ##   --cam=pursuit       proof camera ahead of the player looking back at the chase
+##   --roadblock=<frame>  force a 3-unit rolling roadblock ahead at that physics frame (proof runs)
+##   --police-easy=k:v,..  / --police-hard=k:v,..  override PoliceTuning EASY / HARD values
+##                       (tuning sweeps; e.g. --police-easy=cop_top_kmh:250,nerve_m:12)
 
 signal busted
 signal escaped(bonus: int)
@@ -21,6 +25,9 @@ signal pursuit_started
 const BEHIND_FREE_M := 160.0    # non-chasing owned cops this far behind are removed
 const LOST_M := 520.0           # chasers this far behind give up
 const HIT_REARM_S := 1.2
+const ROADBLOCK_TRY_M := [400.0, 360.0, 440.0, 320.0, 480.0]  # roadblocks form this far ahead (first that fits)
+const ROADBLOCK_PASSED_M := 12.0  # a roadblock unit this far behind you joins the chase (or stands down)
+const PATROL_AFTER_ESCAPE_M := 400.0  # a fresh patrol this soon after an escape
 
 var traffic: TrafficManager
 var player: PlayerCar
@@ -33,10 +40,12 @@ var nearest_m := INF
 var rng := RandomNumberGenerator.new()
 var _seed := 0
 var stats := {"escapes": 0, "busted": 0, "cop_hits": 0, "max_chasers": 0, "rams": 0,
-	"backup": 0, "fps_sum": 0.0, "fps_n": 0, "closest_m": INF}
+	"warns": 0, "roadblocks": 0, "backup": 0, "fps_sum": 0.0, "fps_n": 0, "closest_m": INF}
 var _next_patrol_m := 250.0
 var _backup_t := 0.0
+var _roadblock_t := 0.0
 var _force_at := -1
+var _roadblock_at := -1
 var _frame := 0
 var _model_i := 0
 var _fps_t := 0.0
@@ -50,9 +59,12 @@ func setup(t: TrafficManager, p: PlayerCar, s: RunSession, seed_value: int) -> v
 	rng.seed = seed_value * 31 + 5
 	_seed = seed_value
 	dist_offset = float(LaunchArgs.get_value("dist", "0"))
+	PoliceTuning.easy_override = PoliceTuning.parse_overrides(String(LaunchArgs.get_value("police-easy", "")))
+	PoliceTuning.hard_override = PoliceTuning.parse_overrides(String(LaunchArgs.get_value("police-hard", "")))
 	if LaunchArgs.has("pursuit"):
 		var v := String(LaunchArgs.get_value("pursuit"))
 		_force_at = 90 if v == "true" else int(v)
+	_roadblock_at = int(LaunchArgs.get_value("roadblock", "-1"))
 	tune = PoliceTuning.at(PoliceTuning.difficulty(dist_offset, 1))
 	_next_patrol_m = dist_offset + 250.0
 	warm_models()
@@ -92,10 +104,33 @@ func chasers() -> Array[CopCar]:
 	return out
 
 
+## Chasers working the player (rolling roadblock units excluded): the max_chasers budget.
+func pursuers() -> Array[CopCar]:
+	var out: Array[CopCar] = []
+	for c in chasers():
+		if c.role != CopBrain.Role.ROADBLOCK:
+			out.append(c)
+	return out
+
+
+## The chaser telegraphing a shove right now (null if none): the demo pilot dodges it.
+func warning_cop() -> CopCar:
+	for c in chasers():
+		if c.warning:
+			return c
+	return null
+
+
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
 	_frame += 1
+	var t0 := Time.get_ticks_usec()
+	_police_tick(delta)
+	PerfProbe.span("police", t0)
+
+
+func _police_tick(delta: float) -> void:
 	for i in range(cops.size() - 1, -1, -1):
 		if not is_instance_valid(cops[i]):
 			cops.remove_at(i)
@@ -103,11 +138,14 @@ func _physics_process(delta: float) -> void:
 	var active := session.is_running() or _force_at >= 0
 	if _frame == _force_at:
 		_force_pursuit()
+	if _frame == _roadblock_at:
+		spawn_roadblock(3)
 	_spawn_patrols()
 	if active and pursuit.state != Pursuit.State.BUSTED:
 		_spot()
 	if pursuit.is_chasing():
 		_backup(delta)
+		_roadblocks(delta)
 	_drive_chasers(delta)
 	_cleanup()
 	pursuit.tick(delta, player.kmh(), nearest_m, tune)
@@ -179,7 +217,10 @@ func _spawn_patrol(z: float) -> CopCar:
 
 func _make_cop() -> CopCar:
 	_model_i += 1
-	return CopCar.make(_model_i, pursuit.heat)
+	var t0 := Time.get_ticks_usec()
+	var cop := CopCar.make(_model_i, pursuit.heat)
+	PerfProbe.mark("cop_spawn:%.1f" % ((Time.get_ticks_usec() - t0) / 1000.0))
+	return cop
 
 
 ## Backup arrives from behind, out of sight at first, at pursuit speed.
@@ -232,7 +273,7 @@ func _force_pursuit() -> void:
 # --- pursuit ---------------------------------------------------------------------------------
 
 func _spot() -> void:
-	var n := chasers().size()
+	var n := pursuers().size()
 	for c in cops:
 		if not is_instance_valid(c) or c.chasing:
 			continue
@@ -248,10 +289,10 @@ func _spot() -> void:
 func _enlist(c: CopCar) -> void:
 	traffic.own(c, true)
 	c.parked = false
-	var n := chasers().size()
+	var n := pursuers().size()
 	# Second unit blocks (gets in front and brakes) once the cops are taking it seriously.
-	c.role = CopBrain.Role.BLOCK if n == 1 and difficulty() > 0.35 else CopBrain.Role.TAIL
-	c.ram_t = rng.randf() * 2.0
+	c.role = CopBrain.Role.BLOCK if n == 1 and difficulty() > 0.3 else CopBrain.Role.TAIL
+	c.ram = CopBrain.new_ram(tune.ram_interval_s * 0.5 + rng.randf() * 1.5)
 	c.brain = {"x": c.position.x, "z": c.position.z, "v": c.speed, "hx": c.half_extents.x,
 		"hz": c.half_extents.y, "lat_v": c.lat_v, "accel": 0.0}
 	c.set_chasing(true)
@@ -259,13 +300,101 @@ func _enlist(c: CopCar) -> void:
 
 
 func _backup(delta: float) -> void:
-	if chasers().size() >= tune.max_chasers:
+	if pursuers().size() >= tune.max_chasers:
 		_backup_t = 0.0
 		return
 	_backup_t += delta
 	if _backup_t >= tune.backup_interval_s:
 		_backup_t = 0.0
 		_spawn_backup()
+
+
+## Rolling roadblock: from heat ROADBLOCK_HEAT, every roadblock_interval_s, 2-3 units form up
+## across the lanes ~400 m ahead (ROADBLOCK_TRY_M) at roadblock_kmh, always leaving one lane open (the
+## one with the most free road at that point). Units that you pass join the chase or stand down.
+func _roadblocks(delta: float) -> void:
+	var n := PoliceTuning.roadblock_cops(pursuit.heat)
+	if n == 0:
+		_roadblock_t = tune.roadblock_interval_s * 0.6  # the first one comes soon after heat 3
+		return
+	for c in chasers():
+		if c.role == CopBrain.Role.ROADBLOCK:
+			return  # one roadblock at a time
+	_roadblock_t += delta
+	if _roadblock_t < tune.roadblock_interval_s:
+		return
+	# A failed attempt (traffic in every slot) retries in 2 s instead of a whole interval.
+	_roadblock_t = 0.0 if spawn_roadblock(n) > 0 else tune.roadblock_interval_s - 2.0
+
+
+func spawn_roadblock(n: int) -> int:
+	# Traffic is dense: try a few distances ahead, take the first where at least min(n, 2) units
+	# fit (lane slot free of traffic) around the open lane.
+	for ahead in ROADBLOCK_TRY_M:
+		var z: float = player.position.z - ahead
+		var open := _roadblock_open_lane(z)
+		var lanes: Array[int] = []
+		for l in PoliceTuning.roadblock_lanes(n, open):
+			if _lane_slot_free(l, z, 10.0):
+				lanes.append(l)
+		if lanes.size() < mini(n, 2):
+			continue
+		for l in lanes:
+			_spawn_roadblock_unit(l, z)
+		stats.roadblocks += 1
+		if _debug:
+			print("POLICE_ROADBLOCK f=%d units=%d open_lane=%d ahead=%d" % [_frame, lanes.size(), open, int(ahead)])
+		return lanes.size()
+	return 0
+
+
+## The lane with the most free road around z (traffic nearest to z furthest away).
+func _roadblock_open_lane(z: float) -> int:
+	var open := RoadSpec.nearest_lane(player.position.x)
+	var best := -1.0
+	for l in RoadSpec.LANES:
+		var near := 200.0
+		for c in traffic.cars:
+			if not c.oncoming and absf(c.position.x - RoadSpec.lane_x(l)) < 2.0:
+				near = minf(near, absf(c.position.z - z))
+		if near > best + 0.5:
+			best = near
+			open = l
+	return open
+
+
+func _lane_slot_free(lane: int, z: float, half_len: float) -> bool:
+	var x := RoadSpec.lane_x(lane)
+	for c in traffic.cars:
+		if not c.oncoming and absf(c.position.x - x) < 2.5 and absf(c.position.z - z) < half_len:
+			return false
+	return true
+
+
+func _spawn_roadblock_unit(l: int, z: float) -> void:
+	var x := RoadSpec.lane_x(l)
+	var cop := _make_cop()
+	cop.lane = l
+	cop.target_x = x
+	cop.position = Vector3(x, 0, z)
+	cop.speed = tune.roadblock_kmh / 3.6
+	traffic.adopt(cop)
+	traffic.own(cop, true)
+	cops.append(cop)
+	cop.role = CopBrain.Role.ROADBLOCK
+	cop.brain = {"x": x, "z": z, "v": cop.speed, "hx": cop.half_extents.x, "hz": cop.half_extents.y,
+		"lat_v": 0.0, "accel": 0.0, "lane_x": x}
+	cop.set_chasing(true)
+
+
+## A roadblock unit you got past: joins the chase if there is room, else back into traffic.
+func _roadblock_passed(c: CopCar) -> void:
+	if pursuers().size() < tune.max_chasers:
+		c.role = CopBrain.Role.TAIL
+		c.ram = CopBrain.new_ram(tune.ram_interval_s * 0.5)
+		c.brain.erase("lane_x")
+	else:
+		_stand_down(c)
 
 
 func _drive_chasers(delta: float) -> void:
@@ -281,6 +410,10 @@ func _drive_chasers(delta: float) -> void:
 			all.append({"x": o.position.x, "z": o.position.z, "v": o.speed, "hx": o.half_extents.x,
 				"hz": o.half_extents.y, "node": o})
 	var is_busted := pursuit.state == Pursuit.State.BUSTED
+	var form_z := -INF  # rearmost rolling-roadblock unit: the others hold level with it
+	for c in ch:
+		if c.role == CopBrain.Role.ROADBLOCK:
+			form_z = maxf(form_z, c.position.z)
 	for c in ch:
 		var obs: Array = []
 		for o in all:
@@ -289,15 +422,26 @@ func _drive_chasers(delta: float) -> void:
 		var b := c.brain
 		b.x = c.position.x
 		b.z = c.position.z
+		if c.role == CopBrain.Role.ROADBLOCK:
+			b.form_z = form_z
 		var d: Vector2
+		var phase := CopBrain.RamPhase.READY
 		if is_busted:
 			d = Vector2(b.x, 0.0)  # pull up and stay put
 		else:
-			var ram := false
-			if tune.ram_interval_s > 0.0:
-				c.ram_t += delta
-				var cyc := fposmod(c.ram_t, tune.ram_interval_s)
-				ram = cyc > tune.ram_interval_s - 0.6 and absf(b.z - player.position.z) < 3.0
+			# Shoves: only TAIL units alongside you, never into a car already spinning (stun),
+			# and always after a full telegraph (CopBrain.ram_tick).
+			if c.role == CopBrain.Role.TAIL:
+				var flank: float = player.half_extents.x + c.half_extents.x + tune.box_gap_m
+				var aligned: bool = absf(b.z - player.position.z) < 3.0 \
+					and absf(b.x - player.position.x) < flank + 0.8 and player.stun <= 0.0
+				var was: int = c.ram.phase
+				phase = CopBrain.ram_tick(c.ram, aligned, tune, delta)
+				if phase == CopBrain.RamPhase.WARN and was != CopBrain.RamPhase.WARN:
+					stats.warns += 1
+					if _debug:
+						print("POLICE_WARN f=%d dx=%.1f" % [_frame, b.x - player.position.x])
+			var ram := phase == CopBrain.RamPhase.SHOVE
 			c.think_t -= delta
 			var plan := NAN
 			if c.think_t > 0.0 and not ram:
@@ -306,6 +450,7 @@ func _drive_chasers(delta: float) -> void:
 			if is_nan(plan):
 				c.plan_x = d.x
 				c.think_t = tune.think_s
+		c.set_warn(phase == CopBrain.RamPhase.WARN)
 		b.tx = d.x
 		b.tv = d.y
 		CopBrain.step(b, d, tune, delta)
@@ -328,9 +473,13 @@ func _drive_chasers(delta: float) -> void:
 		# Passing a chaser again scores again.
 		if c.passed and c.position.z < player.position.z - 8.0:
 			c.passed = false
+		if c.role == CopBrain.Role.ROADBLOCK and c.position.z > player.position.z + ROADBLOCK_PASSED_M:
+			_roadblock_passed(c)
+			if not c.chasing:
+				continue
 		var dist := c.position.distance_to(player.position)
 		nearest_m = minf(nearest_m, dist)
-		c.update_siren(dist)
+		c.update_siren(dist, pursuit.heat)
 	stats.closest_m = minf(stats.closest_m, nearest_m)
 
 
@@ -357,13 +506,19 @@ func _remove(c: CopCar) -> void:
 ## Chasers stand down: lights off, back into traffic in the nearest lane.
 func _release_all() -> void:
 	for c in chasers():
-		c.set_chasing(false)
-		c.stop_audio()
-		c.lane = RoadSpec.nearest_lane(c.position.x)
-		c.target_x = RoadSpec.lane_x(c.lane)
-		c.desired = lerpf(128.0, 82.0, float(c.lane) / (RoadSpec.LANES - 1)) / 3.6
-		c.hit = false
-		traffic.own(c, false)
+		_stand_down(c)
+
+
+func _stand_down(c: CopCar) -> void:
+	c.set_warn(false)
+	c.set_chasing(false)
+	c.stop_audio()
+	c.role = CopBrain.Role.TAIL
+	c.lane = RoadSpec.nearest_lane(c.position.x)
+	c.target_x = RoadSpec.lane_x(c.lane)
+	c.desired = lerpf(128.0, 82.0, float(c.lane) / (RoadSpec.LANES - 1)) / 3.6
+	c.hit = false
+	traffic.own(c, false)
 
 
 func _on_hit(car: TrafficCar, _rel_kmh: float) -> void:
@@ -374,10 +529,13 @@ func _on_hit(car: TrafficCar, _rel_kmh: float) -> void:
 		return
 	if pursuit.can_start():
 		pursuit.start()
+	var c := car as CopCar
+	if c.chasing and int(c.ram.phase) == CopBrain.RamPhase.SHOVE:
+		stats.rams += 1  # their shove landed: it wrecks you, but it is not you ramming a cop
+		return
 	if pursuit.is_chasing():
 		pursuit.on_cop_hit()
-		var c := car as CopCar
-		if not c.chasing and chasers().size() < tune.max_chasers:
+		if not c.chasing and pursuers().size() < tune.max_chasers:
 			_enlist(c)
 
 
@@ -397,6 +555,7 @@ func _calm_pilot() -> void:
 
 func _on_escaped(bonus: int) -> void:
 	stats.escapes += 1
+	_next_patrol_m = minf(_next_patrol_m, distance_m() + PATROL_AFTER_ESCAPE_M)
 	_release_all()
 	_calm_pilot()
 	escaped.emit(bonus)
@@ -409,8 +568,9 @@ func _on_busted() -> void:
 
 func print_stats() -> void:
 	var fps: float = stats.fps_sum / maxf(stats.fps_n, 1)
-	print("POLICE_STATS pursuits=%d escapes=%d busted=%d cop_hits=%d max_chasers=%d backup=%d closest_m=%.1f heat=%d difficulty=%.2f dist_m=%d chase_fps=%.1f state=%s" % [
-		pursuit.pursuits, stats.escapes, stats.busted, stats.cop_hits, stats.max_chasers, stats.backup,
+	print("POLICE_STATS pursuits=%d escapes=%d busted=%d cop_hits=%d rams=%d warns=%d roadblocks=%d max_chasers=%d backup=%d closest_m=%.1f heat=%d difficulty=%.2f dist_m=%d chase_fps=%.1f state=%s" % [
+		pursuit.pursuits, stats.escapes, stats.busted, stats.cop_hits, stats.rams, stats.warns, stats.roadblocks,
+		stats.max_chasers, stats.backup,
 		stats.closest_m, pursuit.heat, difficulty(), int(distance_m()), fps,
 		Pursuit.State.keys()[pursuit.state]])
 

@@ -6,6 +6,8 @@ class_name EscapePilot extends Autopilot
 ## The demo pilot with the cops on it (attract / --autodrive proof runs only; never replaces a
 ## human): same lane logic as Autopilot, but it cruises near top speed, plans with harder braking
 ## and prefers lanes away from the nearest chaser, so a proof run can actually shake easy cops.
+## When a cop telegraphs a shove (white strobe, PoliceManager.warning_cop) it dodges: a lane away
+## from that cop if one is clear, else a hard brake (what an alert player does).
 
 const ESCAPE_DECEL := 14.0
 var police: PoliceManager
@@ -28,6 +30,12 @@ func drive(p: PlayerCar) -> Vector3:
 	var cur := RoadSpec.nearest_lane(p.position.x)
 	var here := _free_ahead(p, RoadSpec.lane_x(target_lane))
 	var held := here < escape_need(p.speed, 0.0) * 0.8
+	var warn := police.warning_cop()
+	if warn != null:
+		var away := cur + (1 if warn.position.x < p.position.x else -1)
+		if away >= 0 and away < RoadSpec.LANES and _side_clear(p, RoadSpec.lane_x(away)):
+			target_lane = away
+			_replan = 0.6
 	if _replan <= 0.0 or here < 40.0:
 		_replan = 0.4 if not held else 0.2
 		var cop_x := INF
@@ -76,4 +84,7 @@ func drive(p: PlayerCar) -> Vector3:
 	if drop_back and p.kmh() > 50.0:
 		throttle = 0.0
 		brake = maxf(brake, 0.5)
+	if warn != null and target_lane == cur and p.kmh() > 60.0:
+		throttle = 0.0
+		brake = 1.0
 	return Vector3(steer, throttle, brake)

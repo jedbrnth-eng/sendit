@@ -6,7 +6,8 @@ class_name Pursuit extends RefCounted
 ## The pursuit rules, no nodes: IDLE -> CHASE -> (COOLDOWN after an escape -> IDLE) or BUSTED.
 ## Two meters run during a chase (NFS Most Wanted style):
 ##   evade  fills while no chaser is within evade_dist_m, drains at evade_drain x the fill rate when one is;
-##          full = ESCAPED (bonus by heat), then a short cooldown before cops can chase again.
+##          full = ESCAPED (bonus by heat, a share of it for chases under FULL_BONUS_CHASE_S),
+##          then a short cooldown before cops can chase again.
 ##   busted fills while a chaser is within busted_radius_m and you are under busted_kmh,
 ##          drains when you get going; full = BUSTED (ends the run).
 ## Heat (1..5) climbs with time in the chase and every cop you ram; it raises difficulty.
@@ -14,6 +15,9 @@ class_name Pursuit extends RefCounted
 
 enum State { IDLE, CHASE, COOLDOWN, BUSTED }
 const MAX_HEAT := 5
+## Escapes pay the full bonus only after this much chase; quicker ones pay a share (anti-farm).
+const FULL_BONUS_CHASE_S := 20.0
+const MIN_BONUS_SHARE := 0.25
 
 signal started
 signal escaped(bonus: int)
@@ -39,6 +43,11 @@ static func spotted(player_pos: Vector3, cop_pos: Vector3, kmh: float, limit_kmh
 
 static func escape_bonus(h: int, tune: Dictionary) -> int:
 	return int(round(float(tune.escape_bonus) * h))
+
+
+## Share of the escape bonus paid after chase_s seconds of pursuit.
+static func bonus_share(chase_s: float) -> float:
+	return clampf(chase_s / FULL_BONUS_CHASE_S, MIN_BONUS_SHARE, 1.0)
 
 
 func can_start() -> bool:
@@ -99,7 +108,7 @@ func force_escape(tune: Dictionary) -> void:
 	evade_meter = 1.0
 	busted_meter = 0.0
 	escapes += 1
-	last_bonus = escape_bonus(heat, tune)
+	last_bonus = int(round(escape_bonus(heat, tune) * bonus_share(chase_time)))
 	state = State.COOLDOWN
 	cooldown_left = tune.cooldown_s
 	escaped.emit(last_bonus)

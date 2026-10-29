@@ -113,7 +113,15 @@ func test_catalog_well_formed() -> void:
 		runner.check(d != "" and UnlockCatalog.get_item(d).level == 1 and UnlockCatalog.get_item(d).price == 0, "free default for " + slot)
 	for id in CarCatalog.ids():
 		runner.check(UnlockCatalog.has_item("car_" + id), "every garage car has an unlock entry: " + id)
-	runner.check(UnlockCatalog.get_item("car_naga").level >= 2, "Naga X is earned, not free at level 1")
+	var xr := UnlockCatalog.get_item("car_naga_xr")
+	runner.check(xr.level == 3 and xr.price == 0, "the Naga XR pickup is the early free truck (level 3, 0 CR)")
+	runner.check(not UnlockCatalog.has_item("car_naga"), "the retired Naga X has no unlock entry")
+	var cars := 0
+	for it in UnlockCatalog.ITEMS:
+		if it.slot == "car":
+			cars += 1
+			runner.check(CarCatalog.has(it.car), "car unlock %s points at a garage car" % it.id)
+	runner.check(cars == CarCatalog.ids().size(), "one car unlock per garage car (%d)" % cars)
 
 
 func test_catalog_has_cheap_and_gated_items() -> void:
@@ -152,9 +160,9 @@ func test_buy_rules() -> void:
 
 func test_free_level_items_unlock_by_level() -> void:
 	var p := Profile.new()
-	runner.check(not p.owns("car_naga"), "Naga locked at level 1")
-	p.xp = XpCurve.total_for(UnlockCatalog.get_item("car_naga").level)
-	runner.check(p.owns("car_naga"), "Naga unlocked at its level (free)")
+	runner.check(not p.owns("car_naga_xr"), "Naga XR locked at level 1")
+	p.xp = XpCurve.total_for(UnlockCatalog.get_item("car_naga_xr").level)
+	runner.check(p.owns("car_naga_xr"), "Naga XR unlocked at its level (free)")
 
 
 func test_equip_rules_and_loadout_per_car() -> void:
@@ -166,8 +174,8 @@ func test_equip_rules_and_loadout_per_car() -> void:
 	p.buy(cheap.id)
 	runner.check(p.equip("voltage", cheap.id), "equip owned item")
 	runner.check(p.loadout("voltage")[cheap.slot] == cheap.id, "equipped on voltage")
-	runner.check(p.loadout("naga")[cheap.slot] == UnlockCatalog.default_for(cheap.slot), "naga keeps its own loadout")
-	runner.check(not p.equip("voltage", "car_naga"), "a car is not a part")
+	runner.check(p.loadout("naga_xr")[cheap.slot] == UnlockCatalog.default_for(cheap.slot), "naga_xr keeps its own loadout")
+	runner.check(not p.equip("voltage", "car_naga_xr"), "a car is not a part")
 	runner.check(not p.equip("bogus_car", cheap.id), "unknown car")
 
 
@@ -179,10 +187,10 @@ func test_apply_run_multi_level_and_unlocks() -> void:
 	runner.check(p.credits == 100 + 5 * Profile.LEVEL_UP_CREDITS, "level-up credits paid per level (got %d)" % p.credits)
 	var has_naga := false
 	for id in out.unlocked:
-		if id == "car_naga":
+		if id == "car_naga_xr":
 			has_naga = true
 		runner.check(UnlockCatalog.get_item(id).level > 1 and UnlockCatalog.get_item(id).level <= 6, "unlock list only has items from levels 2..6")
-	runner.check(has_naga, "Naga X shows in the unlock list")
+	runner.check(has_naga, "Naga XR shows in the unlock list")
 	runner.check(p.runs == 1, "run counted")
 
 
@@ -278,7 +286,7 @@ func test_garage_status_and_activate() -> void:
 	runner.check(CarSelect.status(p, "voltage", "paint_factory").kind == "equipped", "stock paint shows EQUIPPED")
 	runner.check(CarSelect.status(p, "voltage", "paint_red").kind == "poor", "priced item with no credits: NEED CR")
 	runner.check(CarSelect.status(p, "voltage", "paint_grape").kind == "locked", "level-gated: LOCKED")
-	runner.check(CarSelect.status(p, "voltage", "car_naga").kind == "locked", "Naga locked at level 1")
+	runner.check(CarSelect.status(p, "voltage", "car_naga_xr").kind == "locked", "Naga XR locked at level 1")
 	runner.check(CarSelect.activate(p, "voltage", "paint_grape").begins_with("LOCKED"), "Enter on a locked item says why")
 	runner.check(CarSelect.activate(p, "voltage", "paint_red").begins_with("NOT ENOUGH"), "Enter without credits says so")
 	p.credits = 1000
@@ -286,8 +294,8 @@ func test_garage_status_and_activate() -> void:
 	runner.check(CarSelect.activate(p, "voltage", "paint_red").begins_with("BOUGHT"), "Enter buys")
 	runner.check(p.credits == 400 and p.loadout("voltage").paint == "paint_red", "bought and equipped in one press")
 	runner.check(CarSelect.status(p, "voltage", "paint_red").kind == "equipped", "now EQUIPPED")
-	runner.check(CarSelect.status(p, "naga", "paint_red").kind == "owned", "owned but not equipped on the other car")
-	runner.check(CarSelect.activate(p, "naga", "paint_red").begins_with("EQUIPPED"), "equip on naga is free")
+	runner.check(CarSelect.status(p, "naga_xr", "paint_red").kind == "owned", "owned but not equipped on the other car")
+	runner.check(CarSelect.activate(p, "naga_xr", "paint_red").begins_with("EQUIPPED"), "equip on naga_xr is free")
 	runner.check(p.credits == 400, "no second charge")
 
 
@@ -295,9 +303,9 @@ func test_locked_saved_car_falls_back() -> void:
 	var keep := ProfileStore.current
 	ProfileStore.current = Profile.new()
 	var keep_chosen := CarCatalog.chosen
-	CarCatalog.chosen = "naga"
+	CarCatalog.chosen = "naga_xr"
 	runner.check(CarCatalog.current_id() == CarCatalog.DEFAULT_ID, "a locked car can't be driven (falls back to the hero)")
-	ProfileStore.current.xp = XpCurve.total_for(UnlockCatalog.get_item("car_naga").level)
-	runner.check(CarCatalog.current_id() == "naga", "unlocked: drives it")
+	ProfileStore.current.xp = XpCurve.total_for(UnlockCatalog.get_item("car_naga_xr").level)
+	runner.check(CarCatalog.current_id() == "naga_xr", "unlocked: drives it")
 	CarCatalog.chosen = keep_chosen
 	ProfileStore.current = keep

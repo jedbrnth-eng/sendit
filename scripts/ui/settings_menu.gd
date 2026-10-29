@@ -94,6 +94,11 @@ func _ready() -> void:
 		func(): return settings.quality(),
 		func(i): settings.set_quality(i),
 		"CUSTOM")
+	_option("AUTO QUALITY", ["OFF", "ON"], func(): return 1 if settings.get_value("auto_quality") else 0,
+		func(i): settings.set_value("auto_quality", i == 1))
+	if AutoQuality.note != "":
+		var n := _label(_list, _semi, 20, Color(GOLD, 0.85))
+		n.text = "   " + AutoQuality.note
 	_option("SHADOWS", Settings.LEVELS, func(): return settings.get_value("shadows"), func(i): settings.set_value("shadows", i))
 	_option("GLOW", Settings.LEVELS, func(): return settings.get_value("glow"), func(i): settings.set_value("glow", i))
 	_option("DRAW DISTANCE", Settings.LEVELS, func(): return settings.get_value("draw"), func(i): settings.set_value("draw", i))
@@ -125,6 +130,7 @@ func _ready() -> void:
 func close() -> void:
 	if _waiting_action != "":
 		return
+	UiSfx.play("ui_close")
 	settings.save()
 	closed.emit()
 	queue_free()
@@ -186,6 +192,7 @@ func _track_focus(c: Control, row: HBoxContainer) -> void:
 	var name: Label = row.get_child(0)
 	var text := name.text
 	c.focus_entered.connect(func():
+		UiSfx.play("ui_move")
 		name.add_theme_color_override("font_color", PINK)
 		name.text = "▸ " + text)
 	c.focus_exited.connect(func():
@@ -212,6 +219,7 @@ func _slider(text: String, key: String, lo: float, hi: float, step: float, fmt: 
 		val.text = fmt.call(v)
 		if busy[0]:
 			return
+		UiSfx.play("ui_tick")
 		settings.set_value(key, v)
 		_apply()
 		_refresh_all())

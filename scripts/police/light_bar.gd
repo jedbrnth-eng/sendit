@@ -10,8 +10,11 @@ class_name LightBar extends Node3D
 const RED := Color(1.0, 0.06, 0.04)
 const BLUE := Color(0.08, 0.25, 1.0)
 const PERIOD := 0.56          # seconds per red+blue cycle
+const WARN_HZ := 12.0         # white strobe rate while a shove is telegraphed
+const WHITE := Color(1.0, 0.95, 0.9)
 
 var on := false
+var warn := false             # shove telegraph: both sides strobe white, fast (WARN_HZ)
 var _t := 0.0
 var _lens: Array[MeshInstance3D] = []
 var _mat: Array[StandardMaterial3D] = []
@@ -89,7 +92,11 @@ func _process(delta: float) -> void:
 	if not on:
 		return
 	_t += delta
+	var w := warn and fposmod(_t * WARN_HZ, 1.0) < 0.5
 	for i in 2:
-		var s := strobe(i, _t)
-		_mat[i].emission_energy_multiplier = 9.0 * s
-		_lights[i].light_energy = 7.0 * s
+		var s := 1.0 if w else (0.25 if warn else strobe(i, _t))
+		var col := WHITE if warn else (RED if i == 0 else BLUE)
+		_mat[i].emission = col
+		_lights[i].light_color = col
+		_mat[i].emission_energy_multiplier = (14.0 if warn else 9.0) * s
+		_lights[i].light_energy = (10.0 if warn else 7.0) * s

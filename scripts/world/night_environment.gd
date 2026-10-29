@@ -8,6 +8,10 @@ class_name NightEnvironment extends WorldEnvironment
 
 const HDRI := "res://assets/hdri/shanghai_bund_4k.hdr"
 const GROUP := &"night_env"   # Settings.apply() calls apply_settings() on this group
+## Render layer 11: seen by the main/chase/replay cameras, skipped by the mirror cameras. The
+## shadow-casting moon lives here, so the mirrors render no shadow cascades (they were ~40% of a
+## mirror pass); the moon is a faint 0.12 fill, the mirrors are lit by the sky ambient and lamps.
+const MAIN_ONLY_LAYER := 1 << 10
 
 var _moon: DirectionalLight3D
 
@@ -77,6 +81,7 @@ func _ready() -> void:
 	moon.rotation_degrees = Vector3(-35, 150, 0)
 	moon.shadow_enabled = true
 	moon.directional_shadow_max_distance = 120.0
+	moon.layers = MAIN_ONLY_LAYER
 	add_child(moon)
 	add_child(PerfProbe.new())
 	add_child(SpeedFx.new())

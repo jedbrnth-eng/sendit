@@ -57,6 +57,8 @@ var recorder := ReplayRecorder.new()  # replay hook: passive recording for the e
 
 
 func _ready() -> void:
+	add_child(Prewarm.new())  # perf: load + build every streamed model before it is first needed
+	add_child(AutoQuality.new())  # perf: AUTO quality governor (Settings "auto_quality")
 	add_child(NightEnvironment.new())
 	highway = Highway.new()
 	add_child(highway)
@@ -111,6 +113,7 @@ func _ready() -> void:
 	pursuit_hud.bind(police, session)
 	audio = CarAudio.new()
 	audio.player = player
+	audio.traffic = traffic
 	add_child(audio)
 
 	# Replay hook (before _on_crash, which can end the run on this very crash).
@@ -285,7 +288,7 @@ func _on_gap(clearance: float, side: int, _oncoming: bool, car: TrafficCar) -> v
 	if pts > 0:
 		_stats.gaps += 1
 		session.on_gap()
-		audio.on_gap(clearance, side, scorer.multiplier)
+		audio.on_gap(clearance, side, scorer.multiplier, split)
 		camera.add_shake(0.03)  # a gap is a reward, not an impact: barely felt
 
 
@@ -400,8 +403,10 @@ func open_pause() -> PauseMenu:
 func _physics_process(delta: float) -> void:
 	_frame += 1
 	var prev_count := session.countdown_number()
+	var t0 := Time.get_ticks_usec()
 	if session.is_running() or recorder.tail > 0.0:
 		recorder.tick(delta, player, traffic.cars)  # replay hook: read-only
+	PerfProbe.span("replay_record", t0)
 	session.tick(delta, player.kmh())
 	if session.state == RunSession.State.COUNTDOWN and session.countdown_number() != prev_count:
 		audio.on_count(session.countdown_number())
@@ -409,9 +414,13 @@ func _physics_process(delta: float) -> void:
 		audio.on_count(session.countdown_number())
 	if session.is_running():
 		scorer.tick(delta)
+	t0 = Time.get_ticks_usec()
 	highway.update_stream(player.position.z)
+	PerfProbe.span("stream_highway", t0)
+	t0 = Time.get_ticks_usec()
 	hazards.update_stream(player.position.z)
 	roadside.update_stream(player.position.z)
+	PerfProbe.span("stream_hazards_roadside", t0)
 	_stats.max_kmh = maxf(_stats.max_kmh, player.kmh())
 	if _frame in _wreck_at:
 		player.on_traffic_hit(140.0, 0.0)  # proof aid: a real hit through the normal crash path
@@ -445,6 +454,7 @@ func _finish(exit_code := 0) -> void:
 		if n:
 			n.process_mode = Node.PROCESS_MODE_DISABLED
 	audio.shutdown()
+	UiSfx.release()
 	CarModel.release()
 	PropKit.release()
 	audio.queue_free()

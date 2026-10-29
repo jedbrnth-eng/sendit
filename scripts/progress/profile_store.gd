@@ -74,8 +74,13 @@ static func load_from(path := "") -> Profile:
 	p.runs = _int(cf.get_value("profile", "runs", 0), 1 << 30)
 	var owned = cf.get_value("profile", "owned", [])
 	if owned is Array:
-		for id in owned:
-			if id is String and UnlockCatalog.has_item(id):
+		for raw in owned:
+			if not raw is String:
+				continue
+			var id: String = raw
+			if id.begins_with("car_"):
+				id = "car_" + CarCatalog.canonical(id.substr(4))  # retired car unlocks -> replacement
+			if UnlockCatalog.has_item(id):
 				p.owned[id] = true
 	p.goal_seed = _int(cf.get_value("profile", "goal_seed", 1), 1 << 30)
 	p.goal_counter = _int(cf.get_value("profile", "goal_counter", 0), 1 << 30)
@@ -89,21 +94,36 @@ static func load_from(path := "") -> Profile:
 				p.goals.append({"kind": g.kind, "target": target, "text": Goals.text(g.kind, target),
 					"xp": 120 + 40 * tier, "credits": 150 + 75 * tier})
 	p.ensure_goals()
-	if cf.has_section("loadout"):
-		for car in cf.get_section_keys("loadout"):
-			var lo = cf.get_value("loadout", car, {})
-			if not CarCatalog.has(car) or not lo is Dictionary:
-				continue
-			for slot in lo:
-				var id = lo[slot]
-				if id is String:
-					p.equip(car, id)  # refuses unknown / unowned / wrong-slot ids
-	if cf.has_section("plates"):
-		for car in cf.get_section_keys("plates"):
-			var t = cf.get_value("plates", car, "")
-			if CarCatalog.has(car) and t is String:
-				p.set_plate(car, t)
+	for key in _car_keys(cf, "loadout"):
+		var car := CarCatalog.canonical(key)
+		var lo = cf.get_value("loadout", key, {})
+		if not CarCatalog.has(car) or not lo is Dictionary:
+			continue
+		for slot in lo:
+			var id = lo[slot]
+			if id is String:
+				p.equip(car, id)  # refuses unknown / unowned / wrong-slot ids
+	for key in _car_keys(cf, "plates"):
+		var car := CarCatalog.canonical(key)
+		var t = cf.get_value("plates", key, "")
+		if CarCatalog.has(car) and t is String:
+			p.set_plate(car, t)
 	return p
+
+
+## Car keys of a per-car section, with retired ids (CarCatalog.ALIASES) moved to their replacement.
+## A retired key is dropped when the file also holds its replacement: the newer car's data wins.
+static func _car_keys(cf: ConfigFile, section: String) -> Array:
+	var out := []
+	if not cf.has_section(section):
+		return out
+	var keys := cf.get_section_keys(section)
+	for key in keys:
+		var car := CarCatalog.canonical(key)
+		if car != key and keys.has(car):
+			continue
+		out.append(key)
+	return out
 
 
 static func _int(v, cap: int) -> int:

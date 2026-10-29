@@ -200,7 +200,9 @@ func update_stream(player_z: float) -> void:
 	var r := Highway.chunk_range(player_z)
 	for i in range(r.x, r.y + 1):
 		if not _chunks.has(i):
+			var t0 := Time.get_ticks_usec()
 			_build_chunk(i)
+			PerfProbe.mark("hazard_chunk:%.1f" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	for i in _chunks.keys():
 		if i < r.x or i > r.y:
 			(_chunks[i] as Node3D).queue_free()
@@ -230,10 +232,12 @@ func blocks(i: int) -> bool:
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
+	var t0 := Time.get_ticks_usec()
 	check_contacts()
 	for d in _live:
 		if d.knocked and d.node and d.vel != Vector3.ZERO:
 			_fly(d, delta)
+	PerfProbe.span("hazards", t0)
 
 
 func _process(delta: float) -> void:
@@ -263,6 +267,7 @@ func check_contacts() -> void:
 			d.hit = true
 			var nudge := -signf(dx) * 0.05 if dx != 0.0 else -0.05
 			var kmh := player.kmh()
+			player.set_meta("hit_kind", d.kind)  # audio: plastic cone vs barrier vs parked car
 			player.on_traffic_hit(kmh, nudge, dz)
 			if not d.heavy:
 				d.knocked = true

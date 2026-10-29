@@ -67,6 +67,10 @@ var _last_gap_t := -10.0
 var _last_gap_side := 0
 var _clock := 0.0
 var _owned := {}   # Police hook: cars driven/recycled by someone else (PoliceManager), see own()
+## Leader lookup through a per-direction z-sorted index (O(n log n)) instead of testing every car
+## against every car (O(n^2): 84 cars = 7k pair tests per tick at 120 Hz). Bit-identical results:
+## tests/test_traffic_index.gd steps both paths side by side. false = the old brute-force scan.
+var use_index := true
 
 
 func _ready() -> void:
@@ -78,6 +82,8 @@ func _ready() -> void:
 
 func setup(p: PlayerCar, seed_value: int) -> void:
 	player = p
+	if LaunchArgs.has("traffic-brute"):   # A/B only: the old all-pairs leader scan
+		use_index = false
 	rng.seed = seed_value
 	# Pre-fill so the first frame already has traffic.
 	for i in target_count:
@@ -120,7 +126,9 @@ func _spawn(z: float) -> void:
 	car.desired = lane_kmh * m[4] * rng.randf_range(0.9, 1.1) / 3.6
 	car.speed = car.desired
 	var paint := _pick_paint() if m[6] else Color(0, 0, 0, 0)
+	var t0 := Time.get_ticks_usec()
 	var body := CarModel.build(m[0], m[1], 0.0, 0.0, paint)
+	PerfProbe.mark("traffic_spawn:%.1f" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	car.add_child(body)
 	car.body = body
 	car.half_extents = collision_half_extents(m[2], body)
@@ -161,29 +169,42 @@ func _physics_process(delta: float) -> void:
 	if player == null:
 		return
 	_clock += delta
+	var t0 := Time.get_ticks_usec()
 	_drive(delta)
+	PerfProbe.span("traffic_drive", t0)
+	t0 = Time.get_ticks_usec()
 	_recycle()
+	PerfProbe.span("traffic_recycle", t0)
+	t0 = Time.get_ticks_usec()
 	_contacts_and_gaps()
+	PerfProbe.span("traffic_contacts", t0)
 
 
 func _drive(delta: float) -> void:
-	# Leader lookup per lane: sort by travel-direction progress.
-	for c in cars:
+	if use_index:
+		_build_index(delta)
+	for ci in cars.size():
+		var c := cars[ci]
 		if _owned.has(c):
 			continue
 		var lead_gap := INF
 		var lead_dv := 0.0
-		for o in cars:
-			# Overlap by real widths, so a car half-way through a lane change counts as a leader in
-			# both lanes and nobody drives through it.
-			if o == c or o.oncoming != c.oncoming or absf(o.position.x - c.position.x) > o.half_extents.x + c.half_extents.x + 0.3:
-				continue
-			var ahead_d := (o.position.z - c.position.z) * c.dir()
-			if ahead_d > 0.0:
-				var g := ahead_d - o.half_extents.y - c.half_extents.y
-				if g < lead_gap:
-					lead_gap = g
-					lead_dv = c.speed - o.speed
+		if use_index:
+			_leader_indexed(c, ci)
+			lead_gap = _lead_gap
+			lead_dv = _lead_dv
+		else:
+			for o in cars:
+				# Overlap by real widths, so a car half-way through a lane change counts as a leader in
+				# both lanes and nobody drives through it.
+				if o == c or o.oncoming != c.oncoming or absf(o.position.x - c.position.x) > o.half_extents.x + c.half_extents.x + 0.3:
+					continue
+				var ahead_d := (o.position.z - c.position.z) * c.dir()
+				if ahead_d > 0.0:
+					var g := ahead_d - o.half_extents.y - c.half_extents.y
+					if g < lead_gap:
+						lead_gap = g
+						lead_dv = c.speed - o.speed
 		# Now and then a driver lifts and brakes for a moment; it ripples back through the lane.
 		if c.slow_t > 0.0:
 			c.slow_t -= delta
@@ -226,6 +247,108 @@ func _drive(delta: float) -> void:
 		# Travel is -Z (same-dir) / +Z (oncoming); +x lateral motion turns a -Z car to negative yaw.
 		var yaw_lane := -TrafficCar.lane_yaw(c.lat_v, c.speed) * (-1.0 if c.oncoming else 1.0)
 		c.rotation.y = (PI if c.oncoming else 0.0) + yaw_lane + c.knock_yaw
+
+
+# Index built once per tick from the positions at the start of _drive. Cars move during the
+# loop (each at most _slack m), so the scan widens its z window by that bound and re-tests every
+# candidate on its CURRENT position, exactly like the brute-force loop.
+var _ix_z := [PackedFloat64Array(), PackedFloat64Array()]   # [same-dir, oncoming] snapshot z, ascending
+var _ix_i := [PackedInt32Array(), PackedInt32Array()]       # matching car indices
+var _ix_hy := [0.0, 0.0]   # longest half length per direction
+var _slack := 0.0
+
+
+func _build_index(delta: float) -> void:
+	var vmax := 0.0
+	var keyed := [[], []]
+	_ix_hy = [0.0, 0.0]
+	for i in cars.size():
+		var c := cars[i]
+		var d := 1 if c.oncoming else 0
+		keyed[d].append(Vector2(c.position.z, i))
+		_ix_hy[d] = maxf(_ix_hy[d], c.half_extents.y)
+		vmax = maxf(vmax, c.speed)
+	# IDM accel <= a_max 1.6 m/s^2, so one tick moves a car at most (v + 1.6 dt) dt; doubled + 1 cm.
+	_slack = 2.0 * (vmax + 2.0 * delta) * delta + 0.01
+	for d in 2:
+		var arr: Array = keyed[d]
+		arr.sort()   # Vector2 sorts by x (z), then y (index): deterministic
+		var zs := PackedFloat64Array()
+		var ix := PackedInt32Array()
+		zs.resize(arr.size())
+		ix.resize(arr.size())
+		for k in arr.size():
+			zs[k] = arr[k].x
+			ix[k] = int(arr[k].y)
+		_ix_z[d] = zs
+		_ix_i[d] = ix
+
+
+## Sets _lead_gap/_lead_dv for car c (index ci): same result as the brute-force scan, including
+## which leader wins a tie (the lowest index in `cars`, the one the old loop met first). Members,
+## not a Vector2 return: Vector2 is 32-bit and would round the 64-bit gap.
+var _lead_gap := INF
+var _lead_dv := 0.0
+
+
+func _leader_indexed(c: TrafficCar, ci: int) -> void:
+	var d := 1 if c.oncoming else 0
+	var zs: PackedFloat64Array = _ix_z[d]
+	var ix: PackedInt32Array = _ix_i[d]
+	var n := zs.size()
+	var cz := c.position.z
+	var cx := c.position.x
+	var chx := c.half_extents.x
+	var chy := c.half_extents.y
+	var best := INF
+	var best_i := -1
+	var best_dv := 0.0
+	var reach: float = _ix_hy[d] + chy + 2.0 * _slack
+	if not c.oncoming:
+		# Travel -Z: leaders have smaller z. Walk from just above c downwards.
+		var k := zs.bsearch(cz + _slack, false) - 1
+		while k >= 0:
+			# Snapshot distance ahead already beyond the best gap (+ worst-case motion): done.
+			if cz - zs[k] - reach > best:
+				break
+			_consider(c, ci, ix[k], cz, cx, chx, chy, -1.0)
+			if _cand_g < best or (_cand_g == best and _cand_i < best_i):
+				best = _cand_g
+				best_i = _cand_i
+				best_dv = _cand_dv
+			k -= 1
+	else:
+		var k := zs.bsearch(cz - _slack, true)
+		while k < n:
+			if zs[k] - cz - reach > best:
+				break
+			_consider(c, ci, ix[k], cz, cx, chx, chy, 1.0)
+			if _cand_g < best or (_cand_g == best and _cand_i < best_i):
+				best = _cand_g
+				best_i = _cand_i
+				best_dv = _cand_dv
+			k += 1
+	_lead_gap = best
+	_lead_dv = best_dv
+
+
+var _cand_g := INF
+var _cand_i := -1
+var _cand_dv := 0.0
+
+
+func _consider(c: TrafficCar, ci: int, oi: int, cz: float, cx: float, chx: float, chy: float, dir: float) -> void:
+	_cand_g = INF
+	_cand_i = oi
+	if oi == ci:
+		return
+	var o := cars[oi]
+	if absf(o.position.x - cx) > o.half_extents.x + chx + 0.3:
+		return
+	var ahead_d := (o.position.z - cz) * dir
+	if ahead_d > 0.0:
+		_cand_g = ahead_d - o.half_extents.y - chy
+		_cand_dv = c.speed - o.speed
 
 
 func _lane_free(c: TrafficCar, lane: int) -> bool:

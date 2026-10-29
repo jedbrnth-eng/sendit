@@ -57,7 +57,7 @@ func _process(_d: float) -> bool:
 		16: _key(KEY_RIGHT)
 		20: _key(KEY_LEFT)
 		24:
-			print("PROBE after R,R,L index=", sel.index if sel else -1, " (expect 1 = naga)")
+			print("PROBE after R,R,L index=", sel.index if sel else -1, " (expect 1 = naga_xr)")
 			_pad(JOY_BUTTON_DPAD_RIGHT)
 		28:
 			print("PROBE after pad right index=", sel.index if sel else -1, " (expect 2)")
@@ -70,7 +70,7 @@ func _process(_d: float) -> bool:
 			var p = m.get("player")
 			print("PROBE chosen=", CarCatalog.chosen, " saved=", GarageStore.load_last(),
 					" screen=", m.get("screen"), " player=", p.vehicle_id if p else "?")
-			var ok: bool = CarCatalog.chosen == "naga" and GarageStore.load_last() == "naga" and m.get("screen") == "run" and p and p.vehicle_id == "naga"
+			var ok: bool = CarCatalog.chosen == "naga_xr" and GarageStore.load_last() == "naga_xr" and m.get("screen") == "run" and p and p.vehicle_id == "naga_xr"
 			print("PROBE_RESULT ", "PASS" if ok else "FAIL")
 			if _saved_before == "":
 				DirAccess.remove_absolute(ProjectSettings.globalize_path(GarageStore.PATH))

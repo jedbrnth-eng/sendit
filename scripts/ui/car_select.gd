@@ -643,12 +643,16 @@ func _process(delta: float) -> void:
 		return
 	# Axis-driven actions (keys, stick) edge-detected here; buttons arrive as events below.
 	if Input.is_action_just_pressed("steer_left"):
+		UiSfx.play("ui_move")
 		_cycle(-1)
 	elif Input.is_action_just_pressed("steer_right"):
+		UiSfx.play("ui_move")
 		_cycle(1)
 	elif Input.is_action_just_pressed("ui_up"):
+		UiSfx.play("ui_tick")
 		_set_row(row - 1)
 	elif Input.is_action_just_pressed("ui_down"):
+		UiSfx.play("ui_tick")
 		_set_row(row + 1)
 
 
@@ -675,6 +679,7 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif (key and key.physical_keycode in [KEY_E, KEY_TAB]) or (pad and pad.button_index == JOY_BUTTON_RIGHT_SHOULDER):
 		_set_tab(tab + 1)
 	elif e.is_action_pressed("pause") or (pad and pad.button_index == JOY_BUTTON_B):
+		UiSfx.play("ui_back")
 		_done = true
 		cancelled.emit()
 	elif (key and key.physical_keycode == KEY_SPACE) or (pad and pad.button_index == JOY_BUTTON_X):
@@ -687,8 +692,10 @@ func _unhandled_input(e: InputEvent) -> void:
 func pick() -> void:
 	var id := _ids[index]
 	if not profile.can_drive(id):
+		UiSfx.play("ui_deny")
 		_toast_say("%s IS LOCKED · REACH LEVEL %d" % [CarCatalog.spec(id).name, int(UnlockCatalog.get_item("car_" + id).level)], false)
 		return
+	UiSfx.play("ui_confirm")
 	_done = true
 	CarCatalog.chosen = id
 	GarageStore.save_last(id)

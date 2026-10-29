@@ -28,9 +28,92 @@ func test_tuning_gets_harder_with_distance() -> void:
 		runner.check(cur.evade_time_s >= prev.evade_time_s, "escaping takes longer at %d m" % d)
 		runner.check(cur.max_chasers >= prev.max_chasers, "more chasers at %d m" % d)
 		prev = cur
-	# The start must be escapable by a car cruising at 230: cops slower than that.
-	runner.check(PoliceTuning.EASY.cop_top_kmh < 225.0, "easy cops are slower than a 230 km/h cruise")
+	# Changed (Jed playtest "police super weak"): easy cops used to be slower than a 230 km/h
+	# cruise, so most of a run nobody could ever be caught. Now even easy cops outrun a 230 cruise,
+	# but every garage car still outruns them flat out (escape stays possible): see
+	# test_cop_speed_sits_between_cruise_and_the_garage.
+	runner.check(PoliceTuning.EASY.cop_top_kmh > 230.0, "easy cops outrun a 230 km/h cruise")
 	runner.check(PoliceTuning.HARD.cop_top_kmh > 260.0, "hard cops outrun a 230 km/h cruise")
+
+
+## Fairness: cops are faster than a cruising player from the start, never faster than the
+## fastest garage car (a flat-out clean run can always escape), and easy cops are slower than the
+## slowest garage car (anyone who floors it early gets away).
+func test_cop_speed_sits_between_cruise_and_the_garage() -> void:
+	var lo := INF
+	var hi := 0.0
+	for id in CarCatalog.ids():
+		var k: float = CarCatalog.spec(id).max_kmh
+		lo = minf(lo, k)
+		hi = maxf(hi, k)
+	for t in [0.0, 0.25, 0.5, 0.75, 1.0]:
+		var top: float = PoliceTuning.at(t).cop_top_kmh
+		runner.check(top > 230.0, "t=%.2f: cops (%d) outrun a 230 cruise" % [t, top])
+		runner.check(top < hi, "t=%.2f: fastest car (%d) outruns the cops (%d)" % [t, hi, top])
+	runner.check(PoliceTuning.EASY.cop_top_kmh < lo, "slowest car (%d) outruns easy cops" % lo)
+
+
+## The ramp reaches full difficulty within one autopilot run (~5-6 km in 3 minutes of traffic).
+func test_ramp_reaches_full_within_a_run() -> void:
+	runner.check(PoliceTuning.FULL_AT_M <= 5000.0, "full difficulty by 5 km (FULL_AT_M=%d)" % PoliceTuning.FULL_AT_M)
+	runner.check(is_equal_approx(PoliceTuning.difficulty(PoliceTuning.FULL_AT_M, 1), 1.0), "1.0 at FULL_AT_M")
+	runner.check(PoliceTuning.difficulty(0.0, 3) >= 0.2, "heat 3 alone is a real step up")
+	var prev := -1.0
+	for d in [0.0, 500.0, 1500.0, 3000.0, 4500.0, 9000.0]:
+		for h in [1, 2, 3, 4, 5]:
+			var v := PoliceTuning.difficulty(d, h)
+			runner.check(v >= 0.0 and v <= 1.0, "difficulty in 0..1")
+		var v1 := PoliceTuning.difficulty(d, 1)
+		runner.check(v1 >= prev, "monotonic in distance at %d m" % d)
+		prev = v1
+
+
+## Every tunable moves one way only from EASY to HARD (no wobble from int rounding or a future
+## non-linear curve), sampled at 21 points.
+func test_every_tunable_is_monotonic() -> void:
+	for k in PoliceTuning.EASY:
+		var up: bool = PoliceTuning.HARD[k] >= PoliceTuning.EASY[k]
+		var prev = PoliceTuning.at(0.0)[k]
+		var ok := true
+		for i in range(1, 21):
+			var cur = PoliceTuning.at(i / 20.0)[k]
+			if (up and cur < prev) or (not up and cur > prev):
+				ok = false
+			prev = cur
+		runner.check(ok, "%s moves one way" % k)
+
+
+## Pressure from the start: two units can chase at heat 1, backup comes quickly, the cap holds.
+func test_pressure_from_the_start_with_caps() -> void:
+	var e := PoliceTuning.at(0.0)
+	runner.check(e.max_chasers >= 2, "two chasers from the start (%d)" % e.max_chasers)
+	runner.check(e.backup_interval_s <= 10.0, "backup within 10 s (%.1f)" % e.backup_interval_s)
+	runner.check(e.think_s <= 0.4, "easy cops replan at least every 0.4 s (%.2f)" % e.think_s)
+	for t in [0.0, 0.5, 1.0]:
+		runner.check(PoliceTuning.at(t).max_chasers <= PoliceTuning.MAX_CHASERS_CAP, "chaser cap at t=%.1f" % t)
+
+
+## A cruising player is never busted, and a bust always takes a real moment (escapable).
+func test_busted_needs_slow_and_time() -> void:
+	for t in [0.0, 0.5, 1.0]:
+		var tu := PoliceTuning.at(t)
+		runner.check(tu.busted_kmh <= 90.0, "t=%.1f: cruising is never busted (%d km/h)" % [t, tu.busted_kmh])
+		runner.check(tu.busted_time_s >= 1.2, "t=%.1f: a bust takes >= 1.2 s" % t)
+
+
+## Roadblocks only from heat 3, and always leave a lane open.
+func test_roadblocks_leave_a_gap() -> void:
+	runner.check(PoliceTuning.roadblock_cops(1) == 0 and PoliceTuning.roadblock_cops(2) == 0, "no roadblocks at heat 1-2")
+	runner.check(PoliceTuning.roadblock_cops(3) >= 2, "heat 3 rolls a roadblock")
+	for h in [3, 4, 5]:
+		var n := PoliceTuning.roadblock_cops(h)
+		runner.check(n <= RoadSpec.LANES - 1, "heat %d: at most LANES-1 cops (%d)" % [h, n])
+		for open in RoadSpec.LANES:
+			var lanes := PoliceTuning.roadblock_lanes(n, open)
+			runner.check(lanes.size() == n, "heat %d open %d: %d cops placed" % [h, open, n])
+			runner.check(not lanes.has(open), "heat %d: lane %d stays open" % [h, open])
+			for l in lanes:
+				runner.check(l >= 0 and l < RoadSpec.LANES, "lane on the road")
 
 
 func test_heat_raises_difficulty() -> void:
@@ -103,8 +186,12 @@ func test_escape_needs_distance_for_long_enough() -> void:
 	for i in 30:
 		p.tick(dt, 220.0, t.evade_dist_m - 30.0, t)
 	runner.check(p.evade_meter < before, "evade meter drains when a cop closes back in")
+	# Tick until the chase ends (was a fixed evade_time_s + 2 s window, which silently assumed
+	# cooldown_s outlasts it; with the retune the cooldown ended inside the window -> IDLE).
 	for i in int((t.evade_time_s + 2.0) / dt):
 		p.tick(dt, 220.0, INF, t)  # no chaser left at all counts as out of sight
+		if p.state != Pursuit.State.CHASE:
+			break
 	runner.check(p.state == Pursuit.State.COOLDOWN, "escaped -> cooldown")
 	runner.check(escaped[0] == 1, "escaped emitted once")
 	runner.check(p.escapes == 1, "escape counted")
@@ -154,10 +241,17 @@ func test_busted_is_terminal() -> void:
 
 
 ## Regression: EASY ram_interval_s was 0 ("never") but lerped to 0.07 s at t=0.02, so an easy
-## cop shoved the player every frame it was alongside. "Never" must survive the lerp.
-func test_easy_cops_rarely_ram() -> void:
-	for t in [0.0, 0.02, 0.1]:
-		runner.check(PoliceTuning.at(t).ram_interval_s >= 20.0, "t=%.2f: shoves at most every 20 s" % t)
+## cop shoved the player every frame it was alongside. Changed with the hard-police retune: the
+## old ">= 20 s at low t" bound made early cops harmless (Jed: "super weak"). Rams are now
+## telegraphed (ram_warn_s of flashing + siren before every shove, CopBrain.ram_tick), so the
+## invariant is: every shove is warned, and shoves are spaced well past warn + shove time.
+func test_rams_are_telegraphed_and_spaced() -> void:
+	for t in [0.0, 0.02, 0.1, 0.5, 1.0]:
+		var tu := PoliceTuning.at(t)
+		runner.check(tu.ram_warn_s >= 0.45, "t=%.2f: >= 0.45 s warning before a shove (%.2f)" % [t, tu.ram_warn_s])
+		runner.check(tu.ram_interval_s >= tu.ram_warn_s + CopBrain.RAM_SHOVE_S + 2.0,
+			"t=%.2f: shoves spaced (%.1f s)" % [t, tu.ram_interval_s])
+	runner.check(PoliceTuning.at(0.0).ram_interval_s <= 12.0, "easy cops do threaten (<= 12 s)")
 	runner.check(PoliceTuning.at(1.0).ram_interval_s <= 4.0, "hard cops shove often")
 
 
@@ -201,3 +295,24 @@ func test_evade_meter_drains_slower_for_mild_cops() -> void:
 			p.tick(1.0 / 60.0, 220.0, tune.evade_dist_m - 20.0, tune)
 		drained.append(0.6 - p.evade_meter)
 	runner.check(drained[0] < 0.6 * drained[1], "easy drains %.3f vs hard %.3f" % drained)
+
+
+## Anti-farm: the retune made escapes at low heat quicker (evade_time_s 4 -> 3) and patrols more
+## frequent, so a "pass a patrol, floor it, escape" loop would pay more per minute than before.
+## A quick escape now pays a share of the bonus (Pursuit.bonus_share): full only after
+## FULL_BONUS_CHASE_S of chase. Bound: the fastest possible heat-1 escape loop earns no more per
+## second than the base game's fastest loop (4000 per 4 s evade + 6 s cooldown = 400 pts/s).
+func test_quick_escapes_do_not_farm_the_bonus() -> void:
+	var t := PoliceTuning.at(0.0)
+	runner.check(Pursuit.bonus_share(1.0) < Pursuit.bonus_share(Pursuit.FULL_BONUS_CHASE_S), "short chase pays less")
+	runner.check(is_equal_approx(Pursuit.bonus_share(Pursuit.FULL_BONUS_CHASE_S + 5.0), 1.0), "a real chase pays in full")
+	var p := Pursuit.new()
+	p.start()
+	var dt := 1.0 / 60.0
+	var secs := 0.0
+	while p.state == Pursuit.State.CHASE and secs < 30.0:
+		p.tick(dt, 250.0, INF, t)
+		secs += dt
+	var rate: float = p.last_bonus / (secs + t.cooldown_s)
+	runner.check(rate <= 400.0, "quickest escape loop pays %.0f pts/s (base 400)" % rate)
+	runner.check(p.last_bonus > 0, "still pays something (%d)" % p.last_bonus)

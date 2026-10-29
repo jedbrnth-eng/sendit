@@ -7,7 +7,7 @@ extends SceneTree
 ##   python3 tools/run_probe.py --expect "GARAGE_PROBE passed=\d+ failed=0" -- godot --headless --path . -s tools/probe_garage.gd
 ## Uses a scratch profile (level 1, 500 credits): tabs with Q/E and LB/RB, buys a 400 CR paint with
 ## Enter, is refused a second 400 CR paint (100 CR left), checks the buy + loadout reached the
-## profile FILE, is refused the locked Naga X, then drives the Voltage with Space and checks the
+## profile FILE, is refused the locked Naga XR, then drives the Voltage with Space and checks the
 ## run's car wears the bought paint. Exit 0 only when every check passed.
 
 var _frame := 0
@@ -105,10 +105,10 @@ func _process(_d: float) -> bool:
 			_check(cs.tab == 0, "Q back to CAR")
 			_key(KEY_RIGHT)
 		50:
-			_check(cs.index == 1, "Right shows the Naga X")
+			_check(cs.index == 1, "Right shows the Naga XR")
 			_key(KEY_ENTER)
 		54:
-			_check(String(_main.get("screen")) == "select" and _sel() != null, "locked Naga X is refused (still in the garage)")
+			_check(String(_main.get("screen")) == "select" and _sel() != null, "locked Naga XR is refused (still in the garage)")
 			_check(cs._toast.text.contains("LOCKED"), "toast says it is locked (%s)" % cs._toast.text)
 			_key(KEY_LEFT)
 		58:
