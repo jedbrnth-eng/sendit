@@ -22,6 +22,9 @@ PLATFORMS=("${@:-macos windows linux}")
 
 rm -rf export dist
 mkdir -p export dist
+# Git ignores these folders, but Godot needs its own marker. Otherwise later platforms
+# import and repack resources from the bundles produced earlier in this same run.
+touch export/.gdignore dist/.gdignore
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true   # first import can exit non-zero; the export below is the real check
 
 stage_docs() {  # $1 = platform, $2 = folder
