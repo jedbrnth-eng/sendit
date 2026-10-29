@@ -22,6 +22,8 @@ jobs:
         run: scripts/ci/install-godot.sh
       - name: Gate (import, unit tests, 600-frame autopilot run)
         run: tools/gate.sh
+      - name: Offline export isolation tests
+        run: python3 scripts/test_export.py
       - name: Scripts are valid shell
         run: |
           for f in install.sh scripts/*.sh scripts/ci/*.sh tools/*.sh; do bash -n "$f" || exit 1; done
