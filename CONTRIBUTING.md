@@ -9,7 +9,7 @@ Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT
 godot --path .                        # play
 godot --path . -- --autodrive         # let the autopilot drive (attract mode, useful for profiling)
 ```
-Launch arguments go after `--`: `--screen=title|select|run|results|drive`, `--car=<id>` (voltage, naga, kaze, kaiju, rotor, naga_xr), `--seed=<n>` (default: a fresh seed every round), `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`, `--cam=hood|rear|side|front|wheel` (camera proof shots), `--no-hud` (clean promo frames), `--menu=settings|pause`, `--garage-tab=<TAB>` (with `--garage-row`, `--garage-step`), `--loadout=<item ids>`, `--plate=<text>`, `--windowed`, `--mirrors=off|rear|all` (override the mirror setting), `--replay-at-end` (play the end-of-round replay in autopilot and capture runs too), `--replay-test` (also quit when it ends), `--perf-hitches` (print every frame over 25 ms). `--settings-file`, `--garage-file`, `--profile-file` and `--best-file` point the save files somewhere else, so probes and captures never touch your own progress. They are parsed in `scripts/core/boot.gd` and `scripts/core/launch_args.gd`.
+Launch arguments go after `--`: `--screen=title|select|run|results|drive`, `--car=<id>` (voltage, naga_xr, kaze, kaiju, rotor; the retired `naga` is read as `naga_xr`), `--seed=<n>` (default: a fresh seed every round), `--autodrive`, `--pursuit=<m>` (force a police pursuit), `--wreck-at=<physics frames>`, `--run-seconds=<s>`, `--quit-after=<physics frames>`, `--cam=hood|rear|side|front|wheel` (camera proof shots), `--no-hud` (clean promo frames), `--menu=settings|pause`, `--garage-tab=<TAB>` (with `--garage-row`, `--garage-step`), `--loadout=<item ids>`, `--plate=<text>`, `--windowed`, `--mirrors=off|top|sides|all` (override the mirror setting; `rear` means `top`), `--replay-at-end` (play the end-of-round replay in autopilot and capture runs too), `--replay-test` (also quit when it ends), `--perf-hitches` (print every frame over 25 ms, tagged with what ran in it), `--roadblock=<frame>` (force a rolling roadblock), `--no-bake` and `--traffic-brute` (switch off chunk baking or the traffic index, for A/B runs). `--settings-file`, `--garage-file`, `--profile-file` and `--best-file` point the save files somewhere else, so probes and captures never touch your own progress. They are parsed in `scripts/core/boot.gd` and `scripts/core/launch_args.gd`.
 
 ## Test
 ```
@@ -23,7 +23,11 @@ tools/capture.sh /tmp/before 300,900 7        # PNGs at physics frames 300 and 9
 tools/capture.sh /tmp/after  300,900 7        # then compare the same seed and frames
 godot --path . res://tools/wheel_sheet.tscn -- --out=/tmp/wheels   # rear view of every traffic model and garage car
 ```
-Frame cost on the real renderer: `tools/perf.sh 1500 7 --pursuit=90 --mirrors=all` prints the `PERF` line (vsync off, average frame time, worst frame, draw calls, hitch counts). Run A/B pairs back to back and alternate them; single runs are noisy, so check the load average first.
+Frame cost on the real renderer: `tools/perf.sh 1500 7 --pursuit=90 --mirrors=all` prints the `PERF` line (vsync off, average frame time, draw calls) and `PERF_DIST` (frame-time percentiles and hitch counts); `PERF_RUNS=3` repeats it and prints medians. On a busy machine, compare CPU time and draw counts instead of wall time: `tools/ab_cpu.py 5 3600 "old|../other-checkout|--seed=7" "new|.|--seed=7"` runs the variants interleaved (add `--render` for the real renderer). Single runs are noisy, so check the load average first.
+
+`TESTS_ONLY=mirrors godot --headless --path . -s tests/run_tests.gd` runs only the test files whose names contain `mirrors`.
+
+Sound: the generated sound sets are made by `tools/audio/synth_*.py` (Python with numpy and scipy, deterministic) and encoded by `tools/audio/encode_oneshots.py`; `tools/audio/audit_assets.py` measures every file and `tools/audio_scenario.tscn` with `tools/audio/render_scenario.py` renders a fixed 60-second scenario through the game's own mixer. Loops must stay 16-bit PCM with importer loop points (`tools/audio/set_loop_imports.py`); a test checks it.
 
 Gameplay probes live in `tools/probe_*.gd`; run them through `tools/run_probe.py`, which fails on a timeout, a script error or a missing completion marker (each probe's header has its command line). `tools/film_hazard_crash.gd` films a scripted shoulder-hazard crash for the demo video.
 
@@ -37,7 +41,9 @@ scripts/police/    patrols, chase brain, pursuit state, light bars
 scripts/score/     gap scorer, pass rules, run session, personal best
 scripts/progress/  XP curve, run rewards, unlock catalog, goals, profile and its save file, plate text filter
 scripts/ui/        title, car select / garage, settings and pause menus, HUD, results, speedometer, logo
-scripts/audio/     engine model, car audio, mixer
+scripts/audio/     engine model and profiles, car audio, sound banks, sirens, mixer
+scripts/perf/      main-thread prewarm, AUTO quality governor, frame-time stats
+scripts/replay/    replay recorder, highlight picker, replay director
 tests/             unit tests     tools/   capture, gate, probes, asset scripts, Blender car generators (tools/blender)
 ```
 Scenes are built in code so changes show up in diffs. Use the constants in `road_spec.gd` instead of hard-coding lane positions.

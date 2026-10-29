@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.3.1] - 2026-10-29
+
+Much harder police, four mirror modes, smoother streaming, new sound, and the Naga X is retired.
+
+### Added
+- **Mirror modes:** `M` now cycles OFF, TOP ONLY, SIDES ONLY and ALL, and Settings shows the same four. Settings files from 0.3.0 are migrated (REAR becomes TOP ONLY, ALL stays ALL). `--mirrors=off|top|sides|all` (`rear` still works and means `top`).
+- **Police shoves are telegraphed:** before every shove the cop's light bar strobes white and the siren whoops (0.9 s of warning early in a run, 0.5 s at full difficulty).
+- **Rolling roadblocks** from heat 3: two or three units form up across the road about 400 m ahead and roll at 115 to 135 km/h, always leaving one lane open. Once you are past a unit it joins the chase or stands down.
+- **AUTO quality** (Settings, on by default): if the slowest 5% of frames stay over 25 ms for 5 seconds during a run, graphics step down one tier. It never steps back up by itself and never turns mirrors back on; the settings menu says when it has stepped down.
+- **New sound:** a layered engine with three characters (V8, turbo straight-six, rotary), each with load and overrun loops at seven RPM points, gear shifts, overrun pops, turbo and blow-off; new road loops (tyre roll, rumble strip, shoulder grit, barrier scrape); crashes graded by severity; synthesized score, menu and police sounds (wail, yelp and phaser sirens, shove whoops, roadblock air horns). See "Sound" in the README and `docs/audio-audit.md`.
+- `tools/ab_cpu.py` (load-robust CPU-time and draw-count A/B between checkouts), `tools/perf.sh` now reports frame-time percentiles (`PERF_DIST`), scene size (`PERF_STRUCT`) and per-mirror draw counts, plus `tools/hitch_report.py`, `tools/probe_police_pressure` with `tools/police_pressure.py`, `tools/probe_prewarm`, `tools/probe_stream_cost`, `tools/probe_traffic_cost`, the audio tools in `tools/audio/` and `tools/audio_scenario.tscn`.
+- Launch arguments: `--roadblock=<frame>`, `--no-bake`, `--traffic-brute`, `--auto-quality` (AUTO quality also in autopilot and capture runs, where it is off by default), `--perf-csv=<path>`, `--perf-sys`, `--perf-headless`. `TESTS_ONLY=<name>` runs only matching test files.
+
+### Changed
+- **The police are much harder.** Patrols are closer together and spot you from further away, chasers are faster than a 230 km/h cruise (every garage car still outruns them flat out), two can chase from the first pursuit, backup comes every 10 seconds early in a run and every 3.5 seconds at full difficulty with up to five chasers, and difficulty ramps twice as fast (full at 4.5 km instead of 9 km). Getting busted is easier: a chaser within 12 to 14 m while you are under 35 to 55 km/h. Escaping takes a clean, fast getaway.
+- **Escape bonus:** an escape pays the full bonus only after 20 seconds of chase; quicker escapes pay a share (at least a quarter).
+- **Mirror defaults:** new settings start with the top mirror only (it was all three). The LOW preset turns mirrors off; MEDIUM and HIGH use the top mirror. Mirror views no longer draw the moon's shadow cascades.
+- **The Naga XR is now the free level-3 pickup** (it was level 20 for 10,000 credits). Saves that used the Naga X move to the Naga XR: last car, loadout, plate and owned car. If a save has both, the Naga XR's own data wins.
+- **Smoother streaming:** identical roadside furniture in each new road chunk is merged into shared meshes instead of one node per piece (meshes over 2,000 triangles keep their own instance so level of detail and culling still work). Models for traffic, police, hazards and props are loaded and built a few at a time on the main thread during the first seconds of a round instead of the first time they appear (skipped in headless runs).
+- Traffic finds the car ahead with a sorted index instead of checking every pair; the results are identical (a test steps both versions side by side).
+- **Audio mix:** separate engine, road, siren, effects, UI and music buses, ducking under crashes, and a limiter on the master. One-shots ship as Ogg Vorbis; loops stay 16-bit PCM with importer loop points. The recorded pass-bys, tyre squeal, road roar and wind are kept; the old engine loops, Kenney one-shots and siren recordings are gone.
+- The `PERF` line no longer counts hitches itself; `PERF_DIST` reports frames over 20, 25, 33 and 50 ms with percentiles.
+- The test runner fails when it runs zero tests, and `tools/gate.sh` logs go to a per-checkout temp folder.
+- CREDITS.md has rows for every sound set, and a new test (`test_licenses.gd`) fails if any file under `assets/` has no row or a row matches no file.
+
+### Removed
+- **The Naga X** (the Blender-built pickup from 0.2.0), with its model, wrap texture, generator script and screenshot. The garage now has five cars.
+
+### Fixed
+- Part throttle could sit on the rev limiter (the engine treated exactly 80% throttle as full throttle).
+- Two tracked Python cache files under `tools/blender/` were removed (they are now ignored).
+
+### Known gaps
+- The new sounds are synthesized and were checked with measurements and an automatic classifier, not by ear on a range of speakers. Some still read as synthetic (the rumble strip, the traffic hum, some crash layers). Feedback is welcome.
+- The police tuning was checked with autopilot probes, not with a group of players. It may feel too hard; tell us.
+- Performance was only measured on one machine (Apple M4 Max) while other work was running. See the README for what was and was not measured.
+
 ## [0.3.0] - 2026-10-27
 
 Mirrors, a replay of your best gaps, a new pickup, rebuilt cars and a Thai roadside.
