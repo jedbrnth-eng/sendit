@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3.1 tour: title screen, car select, cars threading traffic in a police pursuit with mirrors lit by the cops behind, a wreck on the hard shoulder, the replay cam with its GAP 2/4 SPLIT caption, then the results screen with LEVEL UP" width="860"></a><br>
-  <sub>Rendered by the game itself, autopilot driving (a light preview, 512×288 at 16 fps, 15 seconds). <a href="docs/demo.mp4">Watch the 31-second video in full quality</a>.</sub>
+  <a href="docs/demo.mp4"><img src="docs/demo.webp" alt="SendIt 0.3.1 gameplay: the title screen, then the Kaze RT at 228 km/h threading traffic for a GAP and a SPLIT before wrecking into a truck, then the Naga XR pickup in a police pursuit with all three mirrors on, chaining an INSANE combo and banking it" width="860"></a><br>
+  <sub>Rendered by the game itself (version 0.3.1, highest graphics settings, autopilot driving). The preview above is 16 seconds at 15 fps. <a href="docs/demo.mp4">Watch the 32-second video with sound</a>: it adds the Rotor FX getting shoved, wrecked and BUSTED by the police.</sub>
 </p>
 
 > **Status: early release (0.3.1).** New in 0.3.1: much harder police (telegraphed shoves, rolling roadblocks from heat 3, faster backup), four mirror modes, smoother streaming, a new synthesized sound set, and the Naga XR is now the free level-3 pickup (the old Naga X is retired). Playable start to finish, but expect rough edges. Issues and pull requests are welcome.
@@ -44,7 +44,7 @@
   <a href="https://github.com/jedbrnth-eng/sendit/releases/latest/download/SendIt-Windows-x86_64.zip"><img src="https://img.shields.io/badge/%E2%AC%87%20Download%20for%20Windows-Free-ff2d95?style=for-the-badge&logo=windows&logoColor=white" alt="Download SendIt for Windows, free" height="52"></a>
   &nbsp;
   <a href="https://github.com/jedbrnth-eng/sendit/releases/latest/download/SendIt-Linux-x86_64.tar.gz"><img src="https://img.shields.io/badge/%E2%AC%87%20Download%20for%20Linux-Free-ff2d95?style=for-the-badge&logo=linux&logoColor=white" alt="Download SendIt for Linux, free" height="52"></a><br>
-  <sub>Free · 165 to 195 MB · macOS 12+ (Apple Silicon or Intel) · Windows 10+ (64-bit) · Linux (x86-64)</sub>
+  <sub>Free · about 210 to 240 MB · macOS 12+ (Apple Silicon or Intel) · Windows 10+ (64-bit) · Linux (x86-64)</sub>
 </p>
 
 ## Download (no terminal needed)

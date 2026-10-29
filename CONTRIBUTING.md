@@ -31,6 +31,14 @@ Sound: the generated sound sets are made by `tools/audio/synth_*.py` (Python wit
 
 Gameplay probes live in `tools/probe_*.gd`; run them through `tools/run_probe.py`, which fails on a timeout, a script error or a missing completion marker (each probe's header has its command line). `tools/film_hazard_crash.gd` films a scripted shoulder-hazard crash for the demo video.
 
+Demo video (`docs/demo.mp4`, `docs/demo.webp`): the game records itself with Godot's movie writer, one shot per command, then ffmpeg cuts and joins the shots. The 0.3.1 video used a settings file with shadows, glow and draw distance on HIGH and `auto_quality=false` (so slow recording frames never step the quality down), and a fully unlocked test profile (`tools/make_maxed_profile.gd`), for example:
+```
+godot --path . --resolution 1920x1080 --write-movie /tmp/naga/f.avi --fixed-fps 30 -- \
+  --autodrive --windowed --quit-after=2000 --settings-file=/tmp/max.cfg --profile-file=/tmp/profile.cfg \
+  --car=naga_xr --seed=5 --pursuit=240 --dist=6000 --mirrors=all
+```
+The other shots: `--screen=title --seed=11`, `--car=kaze --seed=3`, and `--car=rotor --seed=9 --pursuit=120 --dist=9000 --roadblock=900`. Keep the MP4 under about 10 MB and the README preview under about 4 MB.
+
 ## Layout
 ```
 scripts/core/      boot (input map, launch args), main (wiring), road geometry constants, app info
