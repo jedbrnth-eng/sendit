@@ -9,6 +9,10 @@ class_name CarCatalog
 ## `--car=<id>` launch arg > last choice saved in user://garage.cfg > DEFAULT_ID.
 
 const DEFAULT_ID := "voltage"
+## Retired ids -> the car that replaced them. Old saves (garage.cfg, profile loadouts/plates) and
+## `--car=` args are mapped on load so nobody loses a selection, loadout or plate.
+## "naga" was the hand-built Naga X, retired for the Meshy Naga XR (2026-10-28).
+const ALIASES := {"naga": "naga_xr"}
 
 ## hitbox = collision half extents (x half width without mirrors, z half length), metres. It must
 ## cover the body measured from the mesh (CarModel body_half_width; tests/test_contacts_yaw.gd).
@@ -28,13 +32,14 @@ const VEHICLES := [
 		"coat": [], "signature": true, "hood_cam": Vector3(0, 1.18, -1.05), "cam_lift": 0.0, "cam_scale": 1.0, "engine_pitch": 1.0,
 	},
 	{
-		"id": "naga", "name": "NAGA X", "tagline": "Slammed widebody street pickup. Heavy, wide, unbothered.",
-		"model": "res://assets/cars/naga/naga_x.glb", "length": 5.42, "wheels": 4,
-		"hitbox": Vector2(1.05, 2.71),
-		"max_kmh": 285.0, "accel": 8.6, "steer_rate": 1.7, "brake_decel": 14.5,
-		"scrape_crash_kmh": 38.0, "crash_keep": 1.15, "roll": 0.07,
-		"paints": {}, "coat": ["Wrap Naga", "Gloss Black"], "signature": false,
-		"hood_cam": Vector3(0, 1.42, -1.5), "cam_lift": 0.35, "cam_scale": 1.05, "engine_pitch": 0.85,
+		# Meshy Pro image-to-3D, scrubbed of real badges and rebuilt for the game by tools/meshy/*.
+		"id": "naga_xr", "name": "NAGA XR", "tagline": "Widebody Thai street pickup, full wrap. Big, planted, loud.",
+		"model": "res://assets/cars/naga_xr/naga_xr.glb", "length": 5.4, "wheels": 4,
+		"hitbox": Vector2(1.18, 2.7),
+		"max_kmh": 298.0, "accel": 9.0, "steer_rate": 1.72, "brake_decel": 15.0,
+		"scrape_crash_kmh": 40.0, "crash_keep": 1.18, "roll": 0.065,
+		"paints": {}, "coat": ["Wrap NagaXR"], "signature": false,
+		"hood_cam": Vector3(0, 1.5, -1.45), "cam_lift": 0.35, "cam_scale": 1.06, "engine_pitch": 0.82,
 	},
 	{
 		"id": "kaze", "name": "KAZE RT", "tagline": "90s twin-turbo fastback. Fast, balanced, big wing.",
@@ -64,17 +69,6 @@ const VEHICLES := [
 		"paints": {}, "coat": ["Paint Rotor"], "signature": false,
 		"hood_cam": Vector3(0, 1.05, -0.85), "cam_lift": 0.0, "cam_scale": 0.97, "engine_pitch": 1.3,
 	},
-	{
-		# Meshy Pro image-to-3D, scrubbed of real badges and rebuilt for the game by tools/meshy/*.
-		"id": "naga_xr", "name": "NAGA XR", "tagline": "Widebody Thai street pickup, full wrap. Big, planted, loud.",
-		"model": "res://assets/cars/naga_xr/naga_xr.glb", "length": 5.4, "wheels": 4,
-		"hitbox": Vector2(1.18, 2.7),
-		"max_kmh": 298.0, "accel": 9.0, "steer_rate": 1.72, "brake_decel": 15.0,
-		"scrape_crash_kmh": 40.0, "crash_keep": 1.18, "roll": 0.065,
-		"paints": {}, "coat": ["Wrap NagaXR"], "signature": false,
-		"hood_cam": Vector3(0, 1.5, -1.45), "cam_lift": 0.35, "cam_scale": 1.06, "engine_pitch": 0.82,
-	},
-
 ]
 
 ## Shelved (too easy: it slips between cars). Model, generator and rider stay in the repo;
@@ -101,6 +95,11 @@ static func ids() -> Array[String]:
 	return out
 
 
+## The current id for `id` (retired ids map to their replacement; anything else is unchanged).
+static func canonical(id: String) -> String:
+	return String(ALIASES.get(id, id))
+
+
 static func has(id: String) -> bool:
 	return ids().has(id)
 
@@ -118,7 +117,8 @@ static func index_of(id: String) -> int:
 
 ## Pure selection rule (tested): choice > arg > saved > default, skipping unknown ids.
 static func resolve(choice: String, arg: String, saved: String) -> String:
-	for id in [choice, arg, saved]:
+	for raw in [choice, arg, saved]:
+		var id := canonical(raw)
 		if has(id):
 			return id
 	return DEFAULT_ID
@@ -128,7 +128,7 @@ static func current_id() -> String:
 	var arg := String(LaunchArgs.get_value("car", ""))
 	var id := resolve(chosen, arg, GarageStore.load_last())
 	# A car still locked in the player's profile falls back to the hero (--car is a dev override).
-	if id != arg and not ProfileStore.get_current().can_drive(id):
+	if id != canonical(arg) and not ProfileStore.get_current().can_drive(id):
 		return DEFAULT_ID
 	return id
 

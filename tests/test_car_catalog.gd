@@ -10,9 +10,9 @@ const PATH := "user://test_garage.cfg"
 const PACK := ["kaze", "kaiju", "rotor"]
 
 
-func test_catalog_has_six_unique_vehicles() -> void:
+func test_catalog_has_five_unique_vehicles() -> void:
 	var ids := CarCatalog.ids()
-	runner.check(ids.size() == 6, "six vehicles (hero, two pickups, car pack of three), moped shelved (got %d)" % ids.size())
+	runner.check(ids.size() == 5, "five vehicles (hero, the Naga XR pickup, car pack of three), moped shelved (got %d)" % ids.size())
 	for id in PACK:
 		runner.check(ids.has(id), "car pack vehicle %s is in the garage" % id)
 	var seen := {}
@@ -25,24 +25,25 @@ func test_catalog_has_six_unique_vehicles() -> void:
 		runner.check(ResourceLoader.exists(s.model), "model exists: " + s.model)
 	runner.check(CarCatalog.has(CarCatalog.DEFAULT_ID), "default id is in the catalog")
 	runner.check(CarCatalog.ids()[0] == CarCatalog.DEFAULT_ID, "hero is first")
+	runner.check(CarCatalog.ids()[1] == "naga_xr", "the pickup is second (first unlock, level 3)")
 
 
 func test_resolve_order() -> void:
 	# In-session choice > --car arg > saved garage > default; unknown ids are ignored.
-	runner.check(CarCatalog.resolve("naga", "voltage", "voltage") == "naga", "choice wins")
-	runner.check(CarCatalog.resolve("", "naga", "voltage") == "naga", "--car beats saved")
-	runner.check(CarCatalog.resolve("", "", "naga") == "naga", "saved used")
+	runner.check(CarCatalog.resolve("naga_xr", "voltage", "voltage") == "naga_xr", "choice wins")
+	runner.check(CarCatalog.resolve("", "naga_xr", "voltage") == "naga_xr", "--car beats saved")
+	runner.check(CarCatalog.resolve("", "", "naga_xr") == "naga_xr", "saved used")
 	runner.check(CarCatalog.resolve("soi_rocket", "soi_rocket", "soi_rocket") == CarCatalog.DEFAULT_ID, "shelved moped is not selectable")
 	runner.check(CarCatalog.resolve("", "", "") == CarCatalog.DEFAULT_ID, "default")
 	runner.check(CarCatalog.resolve("bogus", "nope", "zzz") == CarCatalog.DEFAULT_ID, "unknown ids fall back")
-	runner.check(CarCatalog.resolve("", "bogus", "naga") == "naga", "bad --car falls through to saved")
+	runner.check(CarCatalog.resolve("", "bogus", "naga_xr") == "naga_xr", "bad --car falls through to saved")
 
 
 func test_garage_round_trip() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
 	runner.check(GarageStore.load_last(PATH) == "", "empty when no file")
-	runner.check(GarageStore.save_last("naga", PATH) == OK, "saved")
-	runner.check(GarageStore.load_last(PATH) == "naga", "loaded back")
+	runner.check(GarageStore.save_last("naga_xr", PATH) == OK, "saved")
+	runner.check(GarageStore.load_last(PATH) == "naga_xr", "loaded back")
 	GarageStore.save_last("voltage", PATH)
 	runner.check(GarageStore.load_last(PATH) == "voltage", "overwritten")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
@@ -55,10 +56,9 @@ func test_handling_differences_are_modest() -> void:
 		for k in ["max_kmh", "accel", "steer_rate", "brake_decel"]:
 			var r: float = float(s[k]) / float(hero[k])
 			runner.check(r >= 0.78 and r <= 1.25, "%s %s within 22%% of the hero (x%.2f)" % [id, k, r])
-	var truck := CarCatalog.spec("naga")
+	var truck := CarCatalog.spec("naga_xr")
 	var bike: Dictionary = CarCatalog.SHELVED_SOI_ROCKET
-	# Hitbox widths follow the measured bodies (test_contacts_yaw.gd): the Voltage body is 1.17 m
-	# half wide, the Naga mesh only 1.06, so "pickup is wider" no longer holds; it is longer.
+	# Hitbox widths follow the measured bodies (test_contacts_yaw.gd); the pickup is longer.
 	runner.check(truck.hitbox.y > hero.hitbox.y, "pickup is longer than the hero")
 	runner.check(bike.hitbox.x < hero.hitbox.x * 0.5, "moped is narrow")
 	runner.check(bike.steer_rate > hero.steer_rate, "moped is more agile")
@@ -75,8 +75,8 @@ func test_car_pack_personalities() -> void:
 	var rotor := CarCatalog.spec("rotor")
 	runner.check(kaze.max_kmh >= hero.max_kmh and kaze.max_kmh > kaiju.max_kmh and kaze.max_kmh > rotor.max_kmh, "Kaze has the pack's top speed")
 	runner.check(absf(kaze.steer_rate - hero.steer_rate) <= 0.1 and kaze.scrape_crash_kmh == hero.scrape_crash_kmh, "Kaze is balanced like the hero")
-	runner.check(kaiju.steer_rate < hero.steer_rate and kaiju.scrape_crash_kmh > hero.scrape_crash_kmh and kaiju.crash_keep > 1.0, "Kaiju: slower steering, shrugs off more")
-	runner.check(kaiju.roll < hero.roll and kaiju.brake_decel > hero.brake_decel, "Kaiju is planted (less roll, grippy brakes)")
+	runner.check(kaiju.steer_rate < hero.steer_rate and kaiju.scrape_crash_kmh > hero.scrape_crash_kmh and kaiju.crash_keep > 1.0, "Kaiju R: slower steering, shrugs off more")
+	runner.check(kaiju.roll < hero.roll and kaiju.brake_decel > hero.brake_decel, "Kaiju R is planted (less roll, grippy brakes)")
 	runner.check(rotor.steer_rate > hero.steer_rate and rotor.steer_rate > kaze.steer_rate, "Rotor is the most agile car")
 	runner.check(rotor.scrape_crash_kmh < hero.scrape_crash_kmh and rotor.crash_keep < 1.0, "Rotor is fragile")
 	var st_g := CarCatalog.stats("kaiju")

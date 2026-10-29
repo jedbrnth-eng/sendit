@@ -188,6 +188,7 @@ func _collide_edges() -> void:
 		yaw *= -0.3
 		_sparks.position = Vector3(side * half_extents.x, 0.35, -half_extents.y * 0.3)
 		if hit_kmh > scrape_crash_kmh:
+			set_meta("hit_kind", "barrier")  # audio: concrete, not a car
 			_crash(hit_kmh, 0.55, side)
 		else:
 			speed *= 0.985

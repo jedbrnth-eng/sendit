@@ -18,8 +18,6 @@ static var _rear := {}
 const RIG := {
 	"voltage": {"body": ["Paint Voltage"], "rims": ["Rim Gunmetal"], "lip": ["Rim Lip"],
 		"exhaust_x": [-0.22, -0.1, 0.1, 0.22], "exhaust_y": 0.27, "exhaust_z": -0.05, "plate_y": 0.5, "plate_z": -0.12},
-	"naga": {"body": ["Wrap Naga"], "rims": ["Rim Black"], "lip": ["Steel"],
-		"exhaust_x": [-0.15, 0.0, 0.15], "exhaust_y": 0.27, "exhaust_z": 0.02, "plate_y": 0.6, "plate_z": 0.0},
 	# recolor_ref: median luminance of the printed wrap (tools/meshy/meshy_build.py --spec naga_xr prints it).
 	"naga_xr": {"body": ["Wrap NagaXR"], "rims": ["Rim Black"], "lip": ["Steel"], "recolor_ref": 0.135,
 		"exhaust_x": [-0.62, 0.62], "exhaust_y": 0.3, "exhaust_z": -0.12, "plate_y": 0.5, "plate_z": 0.0},
@@ -116,7 +114,7 @@ static func _paint(car: CarBody, model: Node3D, rig: Dictionary, paint: Dictiona
 			mat.set_shader_parameter("pattern", int(pattern.pattern))
 			var lum := 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
 			if factory and tex:
-				lum = 0.1  # dark textured wraps (Naga) take a white accent
+				lum = 0.1  # dark textured wraps (Naga XR) take a white accent
 			var acc := Color(0.015, 0.015, 0.02) if lum > 0.3 else Color(0.88, 0.88, 0.9)
 			if int(pattern.pattern) == 6:
 				acc = Color(0.01, 0.01, 0.012)  # tiger stripes are always black

@@ -24,7 +24,7 @@ bake noise), so re-export only when something changes.
 |---|---|---|
 | naga_xr | image-to-3D task 01a17d29-d98b-7065-bd9d-85e1e95419b1 (the project owner's own reference photo) | assets/cars/naga_xr |
 | kaze | text-to-image 01a17d4a-b08d-73de-8f4a-fe3bccb0466f -> image-to-3D 01a17d4b-77cc-76c0-af7a-427da1760f5e | assets/cars/kaze (replaces the procedural Kaze RT) |
-| kaiju | text-to-image 01a17d4a-b08c-7550-bca9-62d9b13954f3 -> image-to-3D 01a17d4b-77e1-7044-b167-f5bfa45cfb84 | assets/cars/kaiju (KAIJU R, replaces the procedural 0.2 Kaiju R) |
+| kaiju | text-to-image 01a17d4a-b08c-7550-bca9-62d9b13954f3 -> image-to-3D 01a17d4b-77e1-7044-b167-f5bfa45cfb84 | assets/cars/kaiju (KAIJU R, garage id "kaiju"; replaces the procedural Kaiju R, tools/blender/kaiju_r.py) |
 | cop_suv | text-to-image 01a17d72-ba75-741c-810d-00e46d6f5a1c -> image-to-3D 01a17d74-9dda-7478-b309-a652ea49e305 | assets/traffic/police_meshy/cop_suv.glb (PoliceFleet, heat 3+) |
 | cop_coupe | text-to-image 01a17d73-fb55-71bb-a0d8-03450fb52c4f -> image-to-3D 01a17d76-5a13-7694-8247-7993f5367e1a | assets/traffic/police_meshy/cop_coupe.glb (PoliceFleet, heat 4+) |
 

@@ -184,3 +184,174 @@ func test_mild_cop_needs_bigger_gap_to_change_lanes() -> void:
 	runner.check(hard, "hard cop takes a 12 m gap")
 	runner.check(not mild, "mild cop waits for a bigger gap")
 	runner.check(PoliceTuning.at(0.0).nerve_m > PoliceTuning.at(1.0).nerve_m, "nerve falls with difficulty")
+
+
+## Bug found by tools/probe_police_pressure.gd (base, --pilot=idle): a mild TAIL cop holds
+## tail_gap_m (16 m) behind a STOPPED player, outside busted_radius_m, so stopping dead took
+## 5-88 s to get busted. A slow player must be boxed in by any cop.
+func test_slow_player_gets_boxed_even_by_mild_cops() -> void:
+	var t := PoliceTuning.at(0.0)
+	var player := _car(_lane(1), -100.0, 20.0 / 3.6)
+	var cop := _car(_lane(1), -80.0, 25.0 / 3.6)
+	var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.TAIL)
+	runner.check(absf(d.x - player.x) > 1.0, "slow player: cop pulls out to come alongside (%.2f)" % d.x)
+
+
+## Closed loop, pure: a player who stops dead is BUSTED quickly by an easy cop arriving from
+## 150 m back at chase speed.
+func test_sim_idle_player_is_busted_quickly() -> void:
+	var t := PoliceTuning.at(0.0)
+	var player := _car(_lane(1), 0.0, 0.0)
+	var cop := _car(_lane(1), 150.0, 50.0)
+	var p := Pursuit.new()
+	p.start()
+	var dt := 1.0 / 60.0
+	var secs := -1.0
+	for f in 60 * 20:
+		var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.TAIL)
+		CopBrain.step(cop, d, t, dt)
+		var dist := Vector2(cop.x - player.x, cop.z - player.z).length()
+		p.tick(dt, 0.0, dist, t)
+		if p.state == Pursuit.State.BUSTED:
+			secs = f * dt
+			break
+	runner.check(secs > 0.0 and secs < 10.0, "stopped player busted within 10 s (%.1f s)" % secs)
+
+
+## Closed loop, pure: on clear road an easy cop 90 m back catches a 230 km/h cruise (on your
+## tail within 30 s), and a 300 km/h player shakes the same cop (escapes).
+func test_sim_easy_cop_catches_cruise_but_not_flat_out() -> void:
+	var t := PoliceTuning.at(0.0)
+	var dt := 1.0 / 60.0
+	for kmh in [230.0, 300.0]:
+		var player := _car(_lane(1), 0.0, kmh / 3.6)
+		var cop := _car(_lane(2), 90.0, kmh / 3.6)
+		var p := Pursuit.new()
+		p.start()
+		var closest := INF
+		for f in 60 * 30:
+			player.z -= player.v * dt
+			var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.TAIL)
+			CopBrain.step(cop, d, t, dt)
+			var dist := Vector2(cop.x - player.x, cop.z - player.z).length()
+			closest = minf(closest, absf(cop.z - player.z))
+			p.tick(dt, kmh, dist, t)
+		if kmh < 250.0:
+			# Caught = reaches its tailing spot (tail_gap_m) and you never shake it.
+			runner.check(closest < t.tail_gap_m + 1.0 and p.escapes == 0,
+				"cruise at %d is caught (closest %.1f m, escapes %d)" % [kmh, closest, p.escapes])
+		else:
+			runner.check(p.escapes == 1, "flat out at %d escapes (closest %.1f m, escapes %d)" % [kmh, closest, p.escapes])
+
+
+func _ram_run(seq: Array, tune: Dictionary, dt := 1.0 / 60.0) -> Array:
+	var r := CopBrain.new_ram()
+	r.cd = 0.0
+	var out := []
+	for aligned in seq:
+		out.append(CopBrain.ram_tick(r, aligned, tune, dt))
+	return out
+
+
+## Every shove is preceded by a full ram_warn_s warning while aligned; losing alignment during
+## the warning cancels it (the next shove needs a fresh full warning); shoves are spaced by
+## ram_interval_s.
+func test_ram_is_always_telegraphed() -> void:
+	var t := PoliceTuning.at(1.0)
+	var dt := 1.0 / 60.0
+	var warn_frames := int(ceil(t.ram_warn_s / dt))
+	var seq := []
+	for i in 600:
+		seq.append(true)
+	var ph := _ram_run(seq, t)
+	var first_shove := ph.find(CopBrain.RamPhase.SHOVE)
+	runner.check(first_shove >= warn_frames - 1, "first shove after a full warning (frame %d, warn %d)" % [first_shove, warn_frames])
+	for i in range(first_shove - warn_frames + 1, first_shove):
+		if ph[i] != CopBrain.RamPhase.WARN:
+			runner.check(false, "frame %d before the shove is WARN" % i)
+			break
+	# Spacing: next WARN only after ram_interval_s.
+	var end_shove := first_shove
+	while end_shove < ph.size() and ph[end_shove] == CopBrain.RamPhase.SHOVE:
+		end_shove += 1
+	var next_warn := ph.find(CopBrain.RamPhase.WARN, end_shove)
+	runner.check(next_warn < 0 or (next_warn - end_shove) * dt >= t.ram_interval_s - 0.05,
+		"next warning after ram_interval_s (%.2f s)" % ((next_warn - end_shove) * dt))
+	# Alignment lost mid-warning: no shove until a fresh full warning.
+	seq = []
+	for i in warn_frames - 3:
+		seq.append(true)
+	for i in 5:
+		seq.append(false)
+	for i in warn_frames + 10:
+		seq.append(true)
+	ph = _ram_run(seq, t)
+	var s := ph.find(CopBrain.RamPhase.SHOVE)
+	runner.check(s >= warn_frames - 3 + 5 + warn_frames - 1, "cancelled warning restarts in full (shove at %d)" % s)
+
+
+## Rolling roadblock units hold their own lane at roadblock speed and still brake for traffic.
+func test_roadblock_holds_its_lane() -> void:
+	var t := PoliceTuning.at(0.5)
+	var player := _car(_lane(1), 0.0, 80.0)  # fast: the roadblock rolls at its own speed
+	var cop := _car(_lane(2), -300.0, 30.0)
+	cop["lane_x"] = _lane(2)
+	var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.ROADBLOCK)
+	runner.check(absf(d.x - _lane(2)) < 0.05, "holds its lane (%.2f)" % d.x)
+	runner.check(absf(d.y - t.roadblock_kmh / 3.6) < 0.05, "rolls at roadblock speed (%.1f)" % d.y)
+	var d2 := CopBrain.decide(cop, player, [_car(_lane(2), -312.0, 15.0)], t, CopBrain.Role.ROADBLOCK)
+	# A slow player (stuck in traffic) still closes on a rolling roadblock.
+	var slow := _car(_lane(1), 0.0, 25.0)
+	var d3 := CopBrain.decide(cop, slow, [], t, CopBrain.Role.ROADBLOCK)
+	runner.check(d3.y < slow.v, "rolls slower than a slow player (%.1f < %.1f)" % [d3.y, slow.v])
+	# Formation: a unit 10 m ahead of the rearmost one eases off so the line stays level.
+	var ahead := _car(_lane(2), -310.0, 30.0)
+	ahead["lane_x"] = _lane(2)
+	ahead["form_z"] = -300.0
+	var d4 := CopBrain.decide(ahead, player, [], t, CopBrain.Role.ROADBLOCK)
+	runner.check(d4.y < d.y - 3.0, "unit ahead of the line eases off (%.1f < %.1f)" % [d4.y, d.y])
+	var gap := 12.0 - 2.4 - 2.4
+	runner.check(d2.y <= CopBrain.safe_speed(gap, 15.0) + 0.01 and d2.y < t.roadblock_kmh / 3.6 - 5.0,
+		"brakes for a slow car ahead in its lane (%.1f)" % d2.y)
+
+
+## Fairness: a blocker in front slows you but never drives you down to busting speed on its own
+## (block_slow x your speed used to spiral a following player down to a bust).
+func test_blocker_never_brakes_you_into_a_bust() -> void:
+	for tt in [0.0, 0.5, 1.0]:
+		var t := PoliceTuning.at(tt)
+		for kmh in [40.0, 80.0, 160.0]:
+			var player := _car(_lane(1), -100.0, kmh / 3.6)
+			var cop := _car(_lane(1), -116.0, kmh / 3.6)
+			var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.BLOCK)
+			runner.check(d.y * 3.6 >= t.busted_kmh + 10.0, "t=%.1f at %d: blocker holds %.0f km/h > bust %.0f" % [tt, kmh, d.y * 3.6, t.busted_kmh])
+
+
+## Found by the pressure probe (idle, seed 3): the only chaser was the patrol you had just passed,
+## 35 m AHEAD; when you stopped it stopped too and waited ~13 s for backup. A cop ahead of a
+## stopped player now backs up to it (clear corridor only) and busts it.
+func test_sim_cop_ahead_backs_up_to_a_stopped_player() -> void:
+	var t := PoliceTuning.at(0.0)
+	var player := _car(_lane(1), 0.0, 0.0)
+	var cop := _car(_lane(1), -35.0, 0.0)
+	var p := Pursuit.new()
+	p.start()
+	var dt := 1.0 / 60.0
+	var secs := -1.0
+	var touched := false
+	for f in 60 * 15:
+		var d := CopBrain.decide(cop, player, [], t, CopBrain.Role.TAIL)
+		CopBrain.step(cop, d, t, dt)
+		if absf(cop.x - player.x) < cop.hx + player.hx and absf(cop.z - player.z) < cop.hz + player.hz:
+			touched = true
+		var dist := Vector2(cop.x - player.x, cop.z - player.z).length()
+		p.tick(dt, 0.0, dist, t)
+		if p.state == Pursuit.State.BUSTED:
+			secs = f * dt
+			break
+	runner.check(secs > 0.0 and secs < 10.0, "cop ahead busts a stopped player within 10 s (%.1f s)" % secs)
+	runner.check(not touched, "backing up never touches the player")
+	# Never backs into a car behind it.
+	var cop2 := _car(_lane(1), -35.0, 0.0)
+	var d2 := CopBrain.decide(cop2, player, [_car(_lane(1), -25.0, 0.0)], t, CopBrain.Role.TAIL)
+	runner.check(d2.y >= 0.0, "a car right behind: no reversing (%.1f)" % d2.y)

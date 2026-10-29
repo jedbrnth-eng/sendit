@@ -271,6 +271,7 @@ func _update_xp() -> void:
 func _level_up(l: int) -> void:
 	_banner.visible = true
 	_banner_label.text = "LEVEL UP!  %d" % l
+	UiSfx.play("level_up")
 	_banner.scale = Vector2.ONE * 1.8
 	_banner.modulate.a = 0.0
 	var tw := create_tween().set_parallel()
@@ -286,6 +287,7 @@ func _level_up(l: int) -> void:
 func _unlock_chip(it: Dictionary) -> void:
 	if _unlock_box.get_child_count() >= 6:
 		return
+	UiSfx.play("unlock")
 	var chip := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.04, 0.03, 0.1, 0.85)

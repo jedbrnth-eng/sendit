@@ -9,8 +9,11 @@ class_name MirrorConfig
 ## may pin them with "mirror_rear" (Vector3) and "mirror_side" (left mirror, Vector3; the right
 ## one is its x-mirror).
 
-enum { OFF, REAR, ALL }
-const MODE_NAMES := ["OFF", "REAR ONLY", "ALL"]
+enum { OFF, TOP, SIDES, ALL }
+## Settings/menu labels, in M-key cycle order (OFF -> TOP ONLY -> SIDES ONLY -> ALL).
+const MODE_NAMES := ["OFF", "TOP ONLY", "SIDES ONLY", "ALL"]
+## settings.cfg schema: v1 stored 0 off / 1 rear-view / 2 all; v2 is the enum above.
+const SETTINGS_VERSION := 2
 const SIZE_NAMES := ["SMALL", "MEDIUM", "LARGE"]
 const SIZE_SCALE := [0.8, 1.0, 1.2]
 ## Medium render targets: low-res on purpose (the mirrors are small and a bit soft anyway).
@@ -33,40 +36,43 @@ static func clamp_size(s) -> int:
 
 
 static func next_mode(m: int) -> int:
-	return (clamp_mode(m) + 1) % 3
+	return (clamp_mode(m) + 1) % MODE_NAMES.size()
 
 
-## --mirrors=off|rear|all (proof/perf runs); -1 = not given or unknown.
+## A saved "mirrors" value from a settings file of schema `version` -> today's mode.
+static func migrate_mode(v, version: int) -> int:
+	if version < 2:
+		return [OFF, TOP, ALL][clampi(int(v), 0, 2)]
+	return clamp_mode(v)
+
+
+## --mirrors=off|top|sides|all (rear = top, for older scripts); -1 = not given or unknown.
 static func parse_mode(s: String) -> int:
 	match s.to_lower():
 		"off", "0":
 			return OFF
-		"rear", "1":
-			return REAR
-		"all", "2":
+		"top", "rear", "1":
+			return TOP
+		"sides", "side", "2":
+			return SIDES
+		"all", "3":
 			return ALL
 	return -1
 
 
 static func shows_rear(m: int) -> bool:
-	return m >= REAR
+	return m == TOP or m == ALL
 
 
 static func shows_sides(m: int) -> bool:
-	return m == ALL
+	return m == SIDES or m == ALL
 
 
-## Update schedule: at most ONE mirror renders per frame (each costs a full forward pass incl. the
-## moon's shadow cascades). Rear-only: the rear-view every frame. All: rear-view on even frames,
-## the side mirrors take turns on odd frames (rear 1/2 rate, sides 1/4 rate each).
-static func renders_on(kind: String, m: int, frame: int) -> bool:
-	if m == REAR:
-		return kind == "rear"
-	if m != ALL:
-		return false
-	if kind == "rear":
-		return frame % 2 == 0
-	return frame % 2 == 1 and ((frame / 2) % 2 == 0) == (kind == "left")
+## Update schedule: every shown mirror renders every frame (smooth; the old round-robin at
+## 15-30 Hz looked choppy). The per-pass cost is cut instead: see Mirrors (no shadows, no glow,
+## short far plane, skyline layer culled).
+static func renders_on(kind: String, m: int, _frame: int) -> bool:
+	return shows_rear(m) if kind == "rear" else shows_sides(m)
 
 
 ## Render-target size (pixels) for "rear" or "side" at a size option.

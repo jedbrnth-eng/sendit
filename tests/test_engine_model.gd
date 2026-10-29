@@ -78,7 +78,7 @@ func test_ding_pitch_rises_with_multiplier() -> void:
 	var p10 := CarAudio.ding_pitch(10.0)
 	runner.check(is_equal_approx(p1, 1.0), "x1 is the base pitch")
 	runner.check(p2 > p1 and p10 > p2, "rises with multiplier")
-	runner.check(p10 <= 2.01, "capped at one octave")
+	runner.check(p10 <= pow(2.0, 21.0 / 12.0) + 0.001, "capped at the ladder top (D5 -> B6)")
 
 
 func test_rolling_start_picks_gear() -> void:
@@ -86,3 +86,45 @@ func test_rolling_start_picks_gear() -> void:
 	m.update(120.0, 1.0, 1.0 / 120.0)
 	runner.check(m.gear >= 2, "120 km/h starts in 3rd or higher, got %d" % (m.gear + 1))
 	runner.check(m.rpm > 3000.0 and m.rpm < 7000.0, "rpm in the band, got %d" % m.rpm)
+
+
+## Regression (audio scenario after a crash): speed falls 252 -> 35 km/h, then the car pulls
+## back up hard (~25 km/h/s) at part throttle. Part throttle must never sit on the limiter
+## or scream near the redline in a low gear; it upshifts on time.
+func test_part_throttle_recovery_after_crash_never_hits_limiter() -> void:
+	for thr in [0.8, 0.8000001, 0.85, 0.9]:  # the scenario's 0.8 arrived as 0.8000001 and rode the limiter
+		_recover_at(thr)
+
+
+func _recover_at(thr: float) -> void:
+	var m := EngineModel.new()
+	var dt := 1.0 / 60.0
+	for i in 60 * 30:
+		m.update(minf(252.0, i * 0.15), 1.0, dt)
+	var kmh := 35.0
+	var max_rpm := 0.0
+	var cut := false
+	var at_66 := 0.0
+	for i in 60 * 4:
+		kmh += 25.0 * dt
+		m.update(kmh, thr, dt)
+		if i > 30:  # allow the post-drop downshift settle
+			max_rpm = maxf(max_rpm, m.rpm)
+		cut = cut or m.fuel_cut
+		if absf(kmh - 66.0) < 0.3:
+			at_66 = m.rpm
+	runner.check(not cut, "throttle %.7f never cuts on the limiter" % thr)
+	runner.check(max_rpm < 7500.0, "throttle %.7f stays under 7500 rpm, max %d" % [thr, max_rpm])
+	runner.check(at_66 > 2500.0 and at_66 < 7000.0, "66 km/h at throttle %.7f reads a sane rpm, got %d" % [thr, at_66])
+
+
+## Same recovery at a 60 Hz audio tick with the speed dropping in one frame (crash): the gear
+## settles within ~1 s to one whose rpm sits in the working band, not idle and not redline.
+func test_gear_settles_quickly_after_a_sudden_speed_drop() -> void:
+	var m := EngineModel.new()
+	var dt := 1.0 / 60.0
+	for i in 60 * 30:
+		m.update(minf(252.0, i * 0.15), 1.0, dt)
+	for i in 60:
+		m.update(35.0, 0.8, dt)
+	runner.check(m.rpm > 2200.0 and m.rpm < 6000.0, "rpm in the working band 1 s after the drop, got %d (gear %d)" % [m.rpm, m.gear + 1])

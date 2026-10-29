@@ -73,6 +73,7 @@ static func make(main: Node, recorder: ReplayRecorder, end_reason: String) -> Re
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_wall_t0 = Time.get_ticks_msec()
+	UiSfx.play("replay_in")
 	_player = _main.player
 	_freeze()
 	_proxy_root = Node3D.new()

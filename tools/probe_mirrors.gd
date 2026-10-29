@@ -4,7 +4,7 @@
 
 extends Node
 ## Mirrors probe on the real game: boots a drive run (autopilot), then with simulated key presses
-## checks M cycles ALL -> OFF -> REAR -> ALL live (frames shown/hidden, choice saved to the
+## checks M cycles ALL -> OFF -> TOP -> SIDES -> ALL live (frames shown/hidden, choice saved to the
 ## settings file), the size option applies live, and the hood cam (C) re-seats the rear-view
 ## bigger. When rendered (--shots=<dir>) it also saves a screenshot per step.
 ## usage: tools/run_probe.py --expect "MIRRORS_PROBE passed=\d+ failed=0" -- godot [--headless] --path . \
@@ -87,27 +87,36 @@ func _run() -> void:
 	_check(m != null, "main builds the mirrors")
 	if m == null:
 		return _end()
-	_check(m.mode == MirrorConfig.ALL and _shown(m) == "rlr", "default ALL: rear + both sides shown (%s)" % _shown(m))
+	_check(m.mode == MirrorConfig.TOP and _shown(m) == "r--", "default TOP ONLY: rear-view only (%s)" % _shown(m))
+	await _shot("0_top_default")
+	await _press(KEY_M)
+	await _frames(3)
+	_check(m.mode == MirrorConfig.SIDES and _shown(m) == "-lr", "M -> SIDES ONLY (%s)" % _shown(m))
+	_check(_saved_mode() == MirrorConfig.SIDES, "SIDES saved")
+	await _shot("1_sides")
+	await _press(KEY_M)
+	await _frames(3)
+	_check(m.mode == MirrorConfig.ALL and _shown(m) == "rlr", "M -> ALL: rear + both sides (%s)" % _shown(m))
 	var cam: Camera3D = m.camera_of("rear")
 	var car: PlayerCar = _main.get("player")
 	var back := car.global_basis.z  # the car faces -Z: +Z is behind
 	_check((-cam.global_basis.z).dot(back) > 0.95, "rear-view camera looks backward")
 	_check(m.camera_of("left").global_position.x < car.global_position.x - 1.0
 		and m.camera_of("right").global_position.x > car.global_position.x + 1.0, "side cameras sit left/right of the car")
-	await _shot("1_all")
+	await _shot("2_all")
 	await _press(KEY_M)
 	await _frames(3)
 	_check(m.mode == MirrorConfig.OFF and _shown(m) == "---", "M -> OFF: all hidden (%s)" % _shown(m))
 	_check(_saved_mode() == MirrorConfig.OFF, "OFF saved to the settings file")
-	await _shot("2_off")
+	await _shot("3_off")
 	await _press(KEY_M)
 	await _frames(3)
-	_check(m.mode == MirrorConfig.REAR and _shown(m) == "r--", "M -> REAR: rear-view only (%s)" % _shown(m))
-	_check(_saved_mode() == MirrorConfig.REAR, "REAR saved")
-	await _shot("3_rear")
+	_check(m.mode == MirrorConfig.TOP and _shown(m) == "r--", "M -> TOP ONLY again (%s)" % _shown(m))
+	_check(_saved_mode() == MirrorConfig.TOP, "TOP saved")
+	await _press(KEY_M)
 	await _press(KEY_M)
 	await _frames(3)
-	_check(m.mode == MirrorConfig.ALL and _shown(m) == "rlr", "M -> ALL again (%s)" % _shown(m))
+	_check(m.mode == MirrorConfig.ALL, "M M -> ALL for the size/hood checks")
 	var rear_frame: Control = m._views.rear.frame
 	var w_med := rear_frame.size.x
 	Settings.get_current().set_value("mirror_size", 2)

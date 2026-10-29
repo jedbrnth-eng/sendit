@@ -11,20 +11,19 @@ const MODELS := [
 	["res://assets/traffic/rgsdev/Police_Sedan.glb", 4.9, 1.9],
 	["res://assets/traffic/quaternius_pp/Police_Car_BwwnUrWGmV.glb", 4.9, 1.9],
 ]
-const YELP := "res://assets/sfx/police/siren_yelp_loop.wav"
-const WAIL := "res://assets/sfx/police/siren_wail_loop.wav"
 
 var chasing := false
 var parked := false
 var role := CopBrain.Role.TAIL
 var bar: LightBar
 var hit_cd := 0.0           # re-arm traffic contacts after a hit (TrafficManager sets `hit` once)
-var ram_t := 0.0            # seconds into the ram cycle
+var ram := CopBrain.new_ram()  # shove cycle (CopBrain.ram_tick): READY -> WARN -> SHOVE
+var warning := false        # telegraphing a shove: white strobe + siren whoop
 var think_t := 0.0          # seconds until the next line choice
 var plan_x := 0.0           # line chosen at the last think
 var brain := {}             # CopBrain state dict, synced each physics tick while chasing
-var _siren: AudioStreamPlayer3D
-var _siren_yelp := false
+var siren: SirenVoice       # created on the first chase (never in headless runs)
+var _honked := false        # roadblock air horn, once per unit
 
 
 static func make(model_index: int, heat := 1) -> CopCar:
@@ -50,39 +49,38 @@ func set_chasing(v: bool) -> void:
 	bar.set_on(v)
 	if DisplayServer.get_name() == "headless":
 		return  # dummy audio driver: never start looping audio (leak at exit)
-	if v and _siren == null:
-		_siren = AudioStreamPlayer3D.new()
-		_siren.bus = AudioMix.SFX
-		_siren.unit_size = 14.0
-		_siren.max_db = -2.0
-		_siren.volume_db = -6.0
-		_siren.position = Vector3(0, 1.6, 0)
-		_siren.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_PHYSICS_STEP
-		add_child(_siren)
-	if _siren:
+	if v and siren == null:
+		siren = SirenVoice.new()
+		siren.position = Vector3(0, 1.6, 0)
+		add_child(siren)
+	if siren:
 		if v:
-			_set_siren(false)
+			siren.start(SfxBank.shared())
 		else:
-			_siren.stop()
+			siren.stop()
 
 
-## Wail while far off, yelp up close (hysteresis so it does not flap).
-func update_siren(dist_m: float) -> void:
-	if _siren == null or not chasing:
+## Siren pattern by distance and pursuit heat (SirenVoice.pattern); roadblock units sound the
+## air horn once as you close in.
+func update_siren(dist_m: float, heat := 1) -> void:
+	if siren == null or not chasing:
 		return
-	if not _siren_yelp and dist_m < 45.0:
-		_set_siren(true)
-	elif _siren_yelp and dist_m > 80.0:
-		_set_siren(false)
+	siren.set_pattern(dist_m, heat)
+	if role == CopBrain.Role.ROADBLOCK and not _honked and dist_m < 140.0:
+		_honked = true
+		siren.honk()
 
 
-func _set_siren(yelp: bool) -> void:
-	_siren_yelp = yelp
-	_siren.stream = load(YELP if yelp else WAIL)
-	_siren.play()
+## Telegraph a shove (CopBrain.RamPhase.WARN): the bar strobes white and the siren whoops.
+func set_warn(v: bool) -> void:
+	if v == warning:
+		return
+	warning = v
+	bar.warn = v
+	if siren:
+		siren.warn(v)
 
 
 func stop_audio() -> void:
-	if _siren:
-		_siren.stop()
-		_siren.stream = null
+	if siren:
+		siren.stop()

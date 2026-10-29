@@ -11,16 +11,47 @@ const TMP := "user://_test_mirrors_settings.cfg"
 
 
 func test_mode_cycle_and_clamp() -> void:
-	runner.check(MirrorConfig.next_mode(MirrorConfig.OFF) == MirrorConfig.REAR, "OFF -> REAR")
-	runner.check(MirrorConfig.next_mode(MirrorConfig.REAR) == MirrorConfig.ALL, "REAR -> ALL")
+	# M cycles OFF -> TOP ONLY -> SIDES ONLY -> ALL -> OFF.
+	runner.check(MirrorConfig.next_mode(MirrorConfig.OFF) == MirrorConfig.TOP, "OFF -> TOP")
+	runner.check(MirrorConfig.next_mode(MirrorConfig.TOP) == MirrorConfig.SIDES, "TOP -> SIDES")
+	runner.check(MirrorConfig.next_mode(MirrorConfig.SIDES) == MirrorConfig.ALL, "SIDES -> ALL")
 	runner.check(MirrorConfig.next_mode(MirrorConfig.ALL) == MirrorConfig.OFF, "ALL -> OFF")
+	runner.check(MirrorConfig.MODE_NAMES.size() == 4 and MirrorConfig.MODE_NAMES[MirrorConfig.TOP] == "TOP ONLY"
+		and MirrorConfig.MODE_NAMES[MirrorConfig.SIDES] == "SIDES ONLY" and MirrorConfig.MODE_NAMES[MirrorConfig.ALL] == "ALL"
+		and MirrorConfig.MODE_NAMES[MirrorConfig.OFF] == "OFF", "menu labels in cycle order")
 	runner.check(MirrorConfig.clamp_mode(9) == MirrorConfig.ALL and MirrorConfig.clamp_mode(-3) == MirrorConfig.OFF, "mode clamps")
 	runner.check(MirrorConfig.clamp_size(7) == 2 and MirrorConfig.clamp_size(-1) == 0, "size clamps")
-	runner.check(MirrorConfig.parse_mode("rear") == MirrorConfig.REAR and MirrorConfig.parse_mode("off") == MirrorConfig.OFF
+	runner.check(MirrorConfig.parse_mode("rear") == MirrorConfig.TOP and MirrorConfig.parse_mode("top") == MirrorConfig.TOP
+		and MirrorConfig.parse_mode("off") == MirrorConfig.OFF and MirrorConfig.parse_mode("sides") == MirrorConfig.SIDES
 		and MirrorConfig.parse_mode("all") == MirrorConfig.ALL and MirrorConfig.parse_mode("junk") == -1, "launch arg parse")
-	runner.check(MirrorConfig.shows_rear(MirrorConfig.REAR) and not MirrorConfig.shows_sides(MirrorConfig.REAR), "rear only")
+	runner.check(MirrorConfig.shows_rear(MirrorConfig.TOP) and not MirrorConfig.shows_sides(MirrorConfig.TOP), "top only")
+	runner.check(not MirrorConfig.shows_rear(MirrorConfig.SIDES) and MirrorConfig.shows_sides(MirrorConfig.SIDES), "sides only")
 	runner.check(MirrorConfig.shows_rear(MirrorConfig.ALL) and MirrorConfig.shows_sides(MirrorConfig.ALL), "all")
 	runner.check(not MirrorConfig.shows_rear(MirrorConfig.OFF) and not MirrorConfig.shows_sides(MirrorConfig.OFF), "off")
+
+
+func test_saved_mode_migration() -> void:
+	# v1 files stored 0 off, 1 rear-view, 2 rear + sides: they keep meaning the same mirrors.
+	runner.check(MirrorConfig.migrate_mode(0, 1) == MirrorConfig.OFF, "v1 0 -> OFF")
+	runner.check(MirrorConfig.migrate_mode(1, 1) == MirrorConfig.TOP, "v1 1 -> TOP ONLY")
+	runner.check(MirrorConfig.migrate_mode(2, 1) == MirrorConfig.ALL, "v1 2 -> ALL")
+	runner.check(MirrorConfig.migrate_mode(7, 1) == MirrorConfig.ALL, "v1 junk clamps")
+	for m in 4:
+		runner.check(MirrorConfig.migrate_mode(m, 2) == m, "v2 value %d kept" % m)
+	# Through a real file: an old (unversioned) settings.cfg with mirrors=2 loads as ALL, a
+	# saved new file keeps SIDES ONLY.
+	var cf := ConfigFile.new()
+	cf.set_value("settings", "mirrors", 2)
+	cf.save(TMP)
+	var s := Settings.new()
+	s.load_from(TMP)
+	runner.check(s.get_value("mirrors") == MirrorConfig.ALL, "old file mirrors=2 -> ALL (got %d)" % s.get_value("mirrors"))
+	s.set_value("mirrors", MirrorConfig.SIDES)
+	s.save(TMP)
+	var t := Settings.new()
+	t.load_from(TMP)
+	runner.check(t.get_value("mirrors") == MirrorConfig.SIDES, "new file keeps SIDES ONLY (got %d)" % t.get_value("mirrors"))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TMP))
 
 
 func test_render_sizes_stay_low_res() -> void:
@@ -56,7 +87,7 @@ func test_anchor_derivation_for_every_catalog_car() -> void:
 
 
 func test_anchor_uses_measured_model_extents() -> void:
-	var s: Dictionary = CarCatalog.spec("naga")
+	var s: Dictionary = CarCatalog.spec("naga_xr")
 	var plain := MirrorConfig.anchors(s)
 	var wide := MirrorConfig.anchors(s, Vector2(1.3, 2.9))
 	runner.check(wide.left.x < -1.3 and wide.right.x > 1.3, "side cams clear the measured mesh width")
@@ -78,20 +109,22 @@ func test_anchor_overrides_win() -> void:
 
 func test_settings_persist_and_presets() -> void:
 	var s := Settings.new()
-	runner.check(s.get_value("mirrors") == MirrorConfig.ALL and s.get_value("mirror_size") == 1, "defaults: all mirrors, medium")
+	runner.check(s.get_value("mirrors") == MirrorConfig.TOP and s.get_value("mirror_size") == 1, "defaults: top only, medium")
 	s.set_value("mirrors", 7)
 	runner.check(s.get_value("mirrors") == MirrorConfig.ALL, "settings clamp mode")
-	s.set_value("mirrors", MirrorConfig.REAR)
+	s.set_value("mirrors", MirrorConfig.TOP)
 	s.set_value("mirror_size", 2)
 	runner.check(s.save(TMP) == OK, "saves")
 	var t := Settings.new()
 	t.load_from(TMP)
-	runner.check(t.get_value("mirrors") == MirrorConfig.REAR and t.get_value("mirror_size") == 2, "mirror settings persist")
+	runner.check(t.get_value("mirrors") == MirrorConfig.TOP and t.get_value("mirror_size") == 2, "mirror settings persist")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TMP))
 	t.set_quality(0)
-	runner.check(t.get_value("mirrors") == MirrorConfig.REAR, "LOW preset = rear-view only")
+	runner.check(t.get_value("mirrors") == MirrorConfig.OFF, "LOW preset = mirrors off")
+	t.set_quality(1)
+	runner.check(t.get_value("mirrors") == MirrorConfig.TOP, "MEDIUM preset = top only")
 	t.set_quality(2)
-	runner.check(t.get_value("mirrors") == MirrorConfig.ALL, "HIGH preset = all mirrors")
+	runner.check(t.get_value("mirrors") == MirrorConfig.TOP, "HIGH preset = top only")
 	runner.check("mirrors" in Settings.REBINDABLE and Settings.default_keys("mirrors") == [KEY_M], "M cycles mirrors (rebindable)")
 
 
@@ -105,16 +138,10 @@ func test_police_cue_sectors() -> void:
 	runner.check(MirrorConfig.cop_cue("left", Vector3(0, 0, 15)) == 0.0, "dead behind: not in the side mirrors' cue")
 
 
-func test_one_mirror_render_per_frame() -> void:
-	var counts := {"rear": 0, "left": 0, "right": 0}
-	for f in 400:
-		var n := 0
-		for k in counts:
-			if MirrorConfig.renders_on(k, MirrorConfig.ALL, f):
-				counts[k] += 1
-				n += 1
-		runner.check(n == 1, "ALL: exactly one mirror renders on frame %d (got %d)" % [f, n])
-	runner.check(counts.rear == 200 and counts.left == 100 and counts.right == 100, "ALL: rear 1/2 rate, sides 1/4 each: %s" % counts)
-	for f in 10:
-		runner.check(MirrorConfig.renders_on("rear", MirrorConfig.REAR, f) and not MirrorConfig.renders_on("left", MirrorConfig.REAR, f), "REAR: rear-view every frame")
-		runner.check(not MirrorConfig.renders_on("rear", MirrorConfig.OFF, f), "OFF: nothing renders")
+func test_every_shown_mirror_renders_every_frame() -> void:
+	# Smooth mirrors: no round-robin (15-30 Hz looked choppy); cost is cut per pass instead.
+	for f in 8:
+		for m in 4:
+			for k in ["rear", "left", "right"]:
+				var shown := MirrorConfig.shows_rear(m) if k == "rear" else MirrorConfig.shows_sides(m)
+				runner.check(MirrorConfig.renders_on(k, m, f) == shown, "mode %d frame %d: %s renders iff shown" % [m, f, k])

@@ -132,7 +132,9 @@ func update_stream(player_z: float) -> void:
 	var r := Highway.chunk_range(player_z)
 	for i in range(r.x, r.y + 1):
 		if not _chunks.has(i):
+			var t0 := Time.get_ticks_usec()
 			_build_chunk(i)
+			PerfProbe.mark("roadside_chunk:%.1f" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	for i in _chunks.keys():
 		if i < r.x or i > r.y:
 			(_chunks[i] as Node3D).queue_free()

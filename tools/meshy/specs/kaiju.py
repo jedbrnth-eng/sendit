@@ -14,7 +14,7 @@ RIM = ("Rim Black", (0.02, 0.02, 0.022), 0.6, 0.25)
 SPOKES, CALIPER = 10, ("Caliper Gold", (0.85, 0.6, 0.12))
 HEIGHT = 1.4
 
-LENGTH = 4.74                 # same as the hand-built Kaiju R (handling + hitbox unchanged)
+LENGTH = 4.74                 # same as the hand-built procedural Kaiju R (handling + hitbox unchanged)
 WIDTH_SCALE = 1.13            # see specs/kaze.py: every garage car is >= the hero's hitbox width
 TARGET_TRIS = 46000
 TEX = 2048

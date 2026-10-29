@@ -82,6 +82,7 @@ func _ready() -> void:
 	_barrier_len = _measure_length(_barrier, 4.0)
 	_build_lamp_parts()
 	_build_furniture_parts()
+	_bake_shared()
 
 
 ## Chunk index range [x, y] to keep alive. Chunk i spans z in [-(i+1)*L, -i*L].
@@ -96,7 +97,9 @@ func update_stream(player_z: float) -> void:
 	var last := r.y
 	for i in range(first, last + 1):
 		if not chunks.has(i):
+			var t0 := Time.get_ticks_usec()
 			chunks[i] = _build_chunk(i)
+			PerfProbe.mark("highway_chunk:%.1f" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	for i in chunks.keys():
 		if i < first or i > last:
 			chunks[i].queue_free()
@@ -114,15 +117,72 @@ func _build_chunk(index: int) -> Node3D:
 	var L := RoadSpec.CHUNK_LEN
 	var W := RoadSpec.outer_edge()
 
-	# Asphalt (both carriageways in one slab)
+	# Road, ground, paint, median, rails, lamps and cat's eyes are identical in every chunk: one
+	# baked set of shared meshes (a few draws per chunk instead of ~170 nodes built per chunk).
+	if bake:
+		_add_shared(c)
+	else:
+		_add_furniture(c, L, W)  # A/B path (--no-bake): main's ~170 nodes per chunk
+	if is_gantry_chunk(index):
+		_add_gantry(c, index, W)
+	_add_skyline(c, rng, L, W)
+	return c
+
+
+## The per-chunk furniture that never varies, baked once from a template chunk built by the
+## same _add_* builders: meshes merged per (material, shadow casting) into one ArrayMesh per
+## casting mode, MultiMeshes and the light cones shared, spot lights duplicated per chunk.
+## Streaming a chunk then adds ~10 nodes instead of ~170 (and no new mesh resources), which was
+## the 5-25 ms highway_chunk hitch (tools/probe_stream_cost.gd).
+var _shared_meshes: Array = []      # [ArrayMesh, cast_shadow setting]
+var _shared_multi: Array = []       # [MultiMesh, Material, cast_shadow setting]
+var _shared_lights: Array[Node3D] = []
+var _shared_instances: Array = []   # [Mesh, Transform3D, cast_shadow]: big meshes kept as instances
+## Meshes with more triangles than this are never merged: an imported model (the 61k-triangle
+## median barrier) keeps its automatic LODs and per-instance culling only as its own instance.
+## Merging the barriers made each chunk a 4M-triangle mesh drawn at full detail at any distance
+## (~86M primitives/frame vs ~0.9M on main, measured with PERF prims_avg).
+const MERGE_MAX_TRIS := 2000
+## --no-bake A/B: build the furniture per chunk like main (measured: same primitives, +53% draws).
+static var bake := true
+
+
+func _bake_shared() -> void:
+	var L := RoadSpec.CHUNK_LEN
+	var W := RoadSpec.outer_edge()
+	var t := Node3D.new()
+	_add_furniture(t, L, W)
+	var groups := {}   # [cast_shadow, material] -> SurfaceTool
+	var cones := {}    # [mesh, material] -> Array[Transform3D]  (shader reads local VERTEX)
+	_collect(t, Transform3D.IDENTITY, groups, cones)
+	var by_shadow := {}
+	for key: Array in groups:
+		var m: ArrayMesh = by_shadow.get(key[0], ArrayMesh.new())
+		(groups[key] as SurfaceTool).commit(m)
+		m.surface_set_material(m.get_surface_count() - 1, key[1])
+		by_shadow[key[0]] = m
+	for cs in by_shadow:
+		_shared_meshes.append([by_shadow[cs], cs])
+	for key: Array in cones:
+		var xfs: Array = cones[key]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = key[0]
+		mm.instance_count = xfs.size()
+		for i in xfs.size():
+			mm.set_instance_transform(i, xfs[i])
+		_shared_multi.append([mm, key[1], GeometryInstance3D.SHADOW_CASTING_SETTING_OFF])
+	t.free()
+
+
+## Road, ground, paint, median, rails, lamps and cat's eyes: the furniture every chunk has.
+func _add_furniture(t: Node3D, L: float, W: float) -> void:
 	var road := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(W * 2.0, L)
 	road.mesh = pm
 	road.material_override = _asphalt_mat
-	c.add_child(road)
-
-	# Ground beyond the road
+	t.add_child(road)
 	for side in [-1, 1]:
 		var g := MeshInstance3D.new()
 		var gm := PlaneMesh.new()
@@ -130,17 +190,96 @@ func _build_chunk(index: int) -> Node3D:
 		g.mesh = gm
 		g.position = Vector3(side * (W + 450.0), -0.05, 0)
 		g.material_override = _ground_mat
-		c.add_child(g)
+		t.add_child(g)
+	_add_paint(t, L)
+	_add_median(t, L)
+	_add_rails(t, L, W)
+	_add_lamps(t, 0, L, W)
+	_add_studs(t, L, W)
 
-	_add_paint(c, L)
-	_add_median(c, L)
-	_add_rails(c, L, W)
-	_add_lamps(c, index, L, W)
-	_add_studs(c, L, W)
-	if is_gantry_chunk(index):
-		_add_gantry(c, index, W)
-	_add_skyline(c, rng, L, W)
-	return c
+func _collect(n: Node, xf: Transform3D, groups: Dictionary, cones: Dictionary) -> void:
+	var here := xf * (n as Node3D).transform if n is Node3D else xf
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh and _tris(n.mesh) > MERGE_MAX_TRIS:
+		var big := n as MeshInstance3D
+		_shared_instances.append([big.mesh, here, big.cast_shadow, big.material_override])
+	elif n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		var mi := n as MeshInstance3D
+		for s in mi.mesh.get_surface_count():
+			var mat: Material = mi.material_override
+			if mat == null:
+				mat = mi.get_surface_override_material(s)
+			if mat == null:
+				mat = mi.mesh.surface_get_material(s)
+			if mat == _cone_mat:
+				var k := [mi.mesh, mat]
+				if not cones.has(k):
+					cones[k] = []
+				cones[k].append(here)
+				continue
+			var key := [mi.cast_shadow, mat]
+			if not groups.has(key):
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				groups[key] = st
+			(groups[key] as SurfaceTool).append_from(mi.mesh, s, here)
+	elif n is MultiMeshInstance3D:
+		var mmi := n as MultiMeshInstance3D
+		_shared_multi.append([mmi.multimesh, mmi.material_override, mmi.cast_shadow])
+	elif n is Light3D:
+		var l := (n as Light3D).duplicate() as Light3D
+		l.transform = here
+		_shared_lights.append(l)
+		return
+	for ch in n.get_children():
+		_collect(ch, here, groups, cones)
+
+
+static func _tris(m: Mesh) -> int:
+	# Only imported/baked ArrayMeshes can be big; PrimitiveMeshes (boxes, planes) are low-poly and
+	# have no surface_get_array_index_len.
+	if not m is ArrayMesh:
+		return 0
+	var am := m as ArrayMesh
+	var n := 0
+	for s in am.get_surface_count():
+		var k: int = am.surface_get_array_index_len(s)
+		if k <= 0:
+			k = am.surface_get_array_len(s)
+		n += k / 3
+	return n
+
+
+func _add_shared(c: Node3D) -> void:
+	for e in _shared_instances:
+		var bi := MeshInstance3D.new()
+		bi.mesh = e[0]
+		bi.transform = e[1]
+		bi.cast_shadow = e[2]
+		bi.material_override = e[3]
+		c.add_child(bi)
+	for e in _shared_meshes:
+		var mi := MeshInstance3D.new()
+		mi.mesh = e[0]
+		mi.cast_shadow = e[1]
+		c.add_child(mi)
+	for e in _shared_multi:
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = e[0]
+		mmi.material_override = e[1]
+		mmi.cast_shadow = e[2]
+		c.add_child(mmi)
+	for l in _shared_lights:
+		c.add_child(l.duplicate())
+
+
+func _exit_tree() -> void:
+	for l in _shared_lights:
+		l.free()
+	_shared_lights.clear()
+	# Drop the shared mesh refs now: imported meshes held past tree exit leaked an RID at quit.
+	_shared_instances.clear()
+	_shared_meshes.clear()
+	_shared_multi.clear()
 
 
 func _strip(c: Node3D, x: float, z: float, w: float, l: float) -> void:

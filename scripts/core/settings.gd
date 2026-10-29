@@ -22,7 +22,8 @@ const DEFAULTS := {
 	"fullscreen": false,
 	"fov": 0.0,          # degrees added to the chase cam's speed-widened FOV
 	"hood_cam": false,   # start runs in the hood camera
-	"mirrors": 2,        # MirrorConfig: 0 off, 1 rear-view only, 2 rear + side mirrors
+	"mirrors": 1,        # MirrorConfig: 0 off, 1 top (rear-view) only, 2 sides only, 3 all
+	"auto_quality": true, # AUTO: step quality down when frames run slow (QualityGovernor)
 	"mirror_size": 1,    # 0 small, 1 medium, 2 large
 	"replay": true,      # end-of-round highlight replay (scripts/replay)
 }
@@ -59,7 +60,7 @@ static func clamp_value(key: String, v):
 			return clampi(int(v), 0, 2)
 		"fov":
 			return clampf(snappedf(float(v), 1.0), -10.0, 15.0)
-		"fullscreen", "hood_cam", "replay":
+		"fullscreen", "hood_cam", "replay", "auto_quality":
 			return bool(v)
 		"mirrors":
 			return MirrorConfig.clamp_mode(v)
@@ -73,11 +74,12 @@ func reset() -> void:
 	keys.clear()
 
 
-## One preset for the three graphics rows (LOW also drops the side mirrors: rear-view only).
+## One preset for the three graphics rows plus the mirrors (LOW: off; MEDIUM/HIGH: top only,
+## the side mirrors are an opt-in extra pass each). Measured costs: README, Performance.
 func set_quality(level: int) -> void:
 	for k in ["shadows", "glow", "draw"]:
 		set_value(k, level)
-	set_value("mirrors", MirrorConfig.REAR if level <= 0 else MirrorConfig.ALL)
+	set_value("mirrors", MirrorConfig.OFF if level <= 0 else MirrorConfig.TOP)
 
 
 ## The preset level when shadows/glow/draw agree, else -1 (custom).
@@ -95,6 +97,7 @@ func save(path := "") -> int:
 	if path == "":
 		path = file
 	var cf := ConfigFile.new()
+	cf.set_value("meta", "version", MirrorConfig.SETTINGS_VERSION)
 	for k in values:
 		cf.set_value("settings", k, values[k])
 	for a in keys:
@@ -109,9 +112,13 @@ func load_from(path := "") -> void:
 	var cf := ConfigFile.new()
 	if cf.load(path) != OK:
 		return
+	var version: int = int(cf.get_value("meta", "version", 1))
 	for k in DEFAULTS:
 		if cf.has_section_key("settings", k):
-			set_value(k, cf.get_value("settings", k))
+			var v = cf.get_value("settings", k)
+			if k == "mirrors":
+				v = MirrorConfig.migrate_mode(v, version)
+			set_value(k, v)
 	if cf.has_section("keys"):
 		for a in cf.get_section_keys("keys"):
 			if a in REBINDABLE:

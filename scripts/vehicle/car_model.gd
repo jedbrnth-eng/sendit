@@ -152,8 +152,10 @@ static func _scan_node(n: Node, model: Node, xf: Transform3D, st: Dictionary, co
 			var mat := mi.get_active_material(s)
 			var mname := mat.resource_name if mat else ""
 			var cls := lamp_class(mname)
-			var arr := mi.mesh.surface_get_arrays(s)
+			var arr := surface_arrays(mi.mesh, s)
 			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			if v.is_empty():
+				continue
 			var nrm: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
 			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
 			if idx.is_empty():
@@ -504,12 +506,33 @@ static func body_half_width(model: Node3D, xf: Transform3D, half: Vector2) -> fl
 	return minf(w[int(floor((w.size() - 1) * 0.75))], half.x)
 
 
+## A surface's arrays, always ARRAY_MAX long with typed (possibly empty) vertex/normal/index
+## entries. A mesh whose arrays come back empty or Nil (an unloaded or invalid mesh RID) yields
+## empty arrays instead of a SCRIPT ERROR mid-build.
+static func surface_arrays(mesh: Mesh, si: int) -> Array:
+	var arr: Array = []
+	if mesh and si >= 0 and si < mesh.get_surface_count():
+		arr = mesh.surface_get_arrays(si)
+	if arr.size() < Mesh.ARRAY_MAX:
+		arr.resize(Mesh.ARRAY_MAX)
+	if not (arr[Mesh.ARRAY_VERTEX] is PackedVector3Array):
+		arr[Mesh.ARRAY_VERTEX] = PackedVector3Array()
+	if not (arr[Mesh.ARRAY_NORMAL] is PackedVector3Array):
+		arr[Mesh.ARRAY_NORMAL] = PackedVector3Array()
+	if not (arr[Mesh.ARRAY_INDEX] is PackedInt32Array):
+		arr[Mesh.ARRAY_INDEX] = PackedInt32Array()
+	return arr
+
+
+static func surface_vertices(mesh: Mesh, si: int) -> PackedVector3Array:
+	return surface_arrays(mesh, si)[Mesh.ARRAY_VERTEX]
+
+
 static func _width_bins(n: Node, xf: Transform3D, bins: Dictionary, half_len: float) -> void:
 	if n is MeshInstance3D and (n as MeshInstance3D).mesh and (n as MeshInstance3D).visible:
 		var mesh := (n as MeshInstance3D).mesh
 		for si in mesh.get_surface_count():
-			var verts = mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]
-			for v in verts:
+			for v in surface_vertices(mesh, si):
 				var w: Vector3 = xf * v
 				if w.y < 0.08 or absf(w.z) > half_len:
 					continue
