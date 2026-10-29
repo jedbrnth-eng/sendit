@@ -112,17 +112,25 @@ func load_from(path := "") -> void:
 	var cf := ConfigFile.new()
 	if cf.load(path) != OK:
 		return
-	var version: int = int(cf.get_value("meta", "version", 1))
+	var raw_version = cf.get_value("meta", "version", 1)
+	var version: int = raw_version if raw_version is int else 1
 	for k in DEFAULTS:
 		if cf.has_section_key("settings", k):
 			var v = cf.get_value("settings", k)
+			# ConfigFile can contain any Variant. Reject invalid values before conversion,
+			# so one edited field cannot abort startup or poison a later graphics setting.
+			if not (v is bool or v is int or v is float):
+				continue
+			if v is float and (is_nan(v) or is_inf(v)):
+				continue
 			if k == "mirrors":
 				v = MirrorConfig.migrate_mode(v, version)
 			set_value(k, v)
 	if cf.has_section("keys"):
 		for a in cf.get_section_keys("keys"):
-			if a in REBINDABLE:
-				keys[a] = int(cf.get_value("keys", a))
+			var code = cf.get_value("keys", a)
+			if a in REBINDABLE and code is int and code > 0:
+				keys[a] = code
 
 
 # --- key bindings ------------------------------------------------------------------------------
