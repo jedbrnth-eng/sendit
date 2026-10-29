@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      - name: Offline gate contract tests
+        run: python3 tools/test_gate.py
       - name: Install Godot (pinned, checksum-verified)
         run: scripts/ci/install-godot.sh
       - name: Gate (import, unit tests, 600-frame autopilot run)
