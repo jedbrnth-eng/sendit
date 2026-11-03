@@ -29,6 +29,7 @@ var _cfg := ""
 var _picked := ""
 var _sel_start := -1
 var _done := false
+var _hood0 := false
 
 
 func _ready() -> void:
@@ -204,9 +205,12 @@ func _run_step(st: Settings) -> bool:
 			if not _until(_menu() is SettingsMenu, "Esc on the title opens SETTINGS"):
 				return false
 			_check(_focus_text().contains("MASTER"), "focus starts on MASTER VOLUME (got %s)" % _focus_text())
+			_hood0 = bool(_main().camera.hood)
+			_key(KEY_C)  # camera toggle must not fire behind the overlay (review P3-10)
 			_key(KEY_LEFT)
 			_key(KEY_LEFT)
 		2:
+			_check(bool(_main().camera.hood) == _hood0, "C behind the title SETTINGS does not toggle the camera")
 			_check(is_equal_approx(st.get_value("master"), 0.9), "keyboard ←← lowers master to 90%% (got %s)" % st.get_value("master"))
 			var db := AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Master"))
 			_check(absf(db - linear_to_db(0.9)) < 0.05, "Master bus follows live (%.2f dB)" % db)
@@ -305,12 +309,28 @@ func _run_step(st: Settings) -> bool:
 			if not _until(pm != null and pm.get("_settings") is SettingsMenu, "pad: PAUSE > SETTINGS opens settings"):
 				return false
 			_shot("pause_settings")
-			_pad(JOY_BUTTON_B)  # back to pause
+			# Pad-only rebind trap (review P1-1): A on a KEYBOARD row, then B must cancel it.
+			var kb: Button = _menu().get("_settings").get("_key_buttons").get("camera")
+			_check(kb != null, "SETTINGS (from PAUSED) has a CAMERA key row")
+			if kb == null:
+				_end()
+				return false
+			kb.grab_focus()
+			_pad(JOY_BUTTON_A)
 		22:
+			if not _until(String(_menu().get("_settings").get("_waiting_action")) == "camera", "pad A on CAMERA waits for a key"):
+				return false
+			_pad(JOY_BUTTON_B)  # cancel the capture (no keyboard needed)
+		23:
+			var sm = _menu().get("_settings")
+			_check(sm is SettingsMenu and String(sm.get("_waiting_action")) == "", "pad B cancels the key capture, SETTINGS stays open")
+			_check(Settings.key_for("camera") == KEY_C, "a cancelled pad capture keeps C on CAMERA (%d)" % Settings.key_for("camera"))
+			_pad(JOY_BUTTON_B)  # back to pause
+		24:
 			if not _until(_tree.paused and _menu() is PauseMenu and _menu().get("_settings") == null, "pad B returns to PAUSED"):
 				return false
 			_key(KEY_ESCAPE)  # resume
-		23:
+		25:
 			if not _until(not _tree.paused and not is_instance_valid(_menu()), "Esc resumes the run"):
 				return false
 			_end()

@@ -3,12 +3,13 @@
 # Part of SendIt: https://github.com/jedbrnth-eng/sendit
 
 class_name PauseMenu extends CanvasLayer
-## Pause overlay (Esc / pad Back during a run): RESUME, SETTINGS, RESTART, QUIT TO TITLE.
+## Pause overlay (Esc / pad Back during a run): RESUME, SETTINGS, RESTART, QUIT TO TITLE, QUIT GAME.
 ## main.gd pauses the tree while this is open and handles the chosen action.
 
 signal resumed
 signal restart
 signal quit_to_title
+signal quit_game
 
 const DISPLAY := "res://assets/fonts/RussoOne-Regular.ttf"
 const SEMI := "res://assets/fonts/ChakraPetch-SemiBold.ttf"
@@ -36,7 +37,7 @@ func _ready() -> void:
 	col.offset_left = 152
 	col.offset_top = -230
 	col.offset_right = 760
-	col.offset_bottom = 300
+	col.offset_bottom = 372
 	_panel.add_child(col)
 	var title := SettingsMenu.make_label(col, load(DISPLAY), 110, Color.WHITE)
 	title.text = "PAUSED"
@@ -45,7 +46,7 @@ func _ready() -> void:
 	sub.custom_minimum_size.y = 40
 	var body: Font = load(SettingsMenu.BODY)
 	for item in [["RESUME", _resume], ["SETTINGS", _open_settings], ["RESTART", func(): restart.emit()],
-			["QUIT TO TITLE", func(): quit_to_title.emit()]]:
+			["QUIT TO TITLE", func(): quit_to_title.emit()], ["QUIT GAME", func(): quit_game.emit()]]:
 		var b := SettingsMenu.make_button(col, body)
 		b.text = item[0]
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT

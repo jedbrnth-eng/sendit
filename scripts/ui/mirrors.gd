@@ -80,7 +80,7 @@ func _ready() -> void:
 	_toast.offset_left = -300
 	_toast.offset_right = 300
 	_toast.modulate.a = 0.0
-	apply_settings(settings)
+	apply_settings(settings.effective())
 	print("MIRRORS mode=%s size=%s rear=%s left=%s right=%s" % [MirrorConfig.MODE_NAMES[mode], MirrorConfig.SIZE_NAMES[size],
 		anchors.rear, anchors.left, anchors.right])
 

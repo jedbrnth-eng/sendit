@@ -16,6 +16,8 @@ var best: BestStore
 var _prompt: Control
 var _logo: Logo
 var _t := 0.0
+var _notice: Label
+var _notice_t := 0.0
 
 
 func _ready() -> void:
@@ -87,9 +89,10 @@ func _ready() -> void:
 			(c as Label).size_flags_vertical = Control.SIZE_FILL
 
 	_build_progress(root, display, body, semi)
+	_build_notice(root, semi)
 
 	var keys := _label(root, body, 22, Color(1, 1, 1, 0.6))
-	keys.text = "W/S  THROTTLE · BRAKE      A/D  STEER      C  CAMERA      R  RESTART      F11  FULLSCREEN      ESC  SETTINGS"
+	keys.text = "W/S  THROTTLE · BRAKE      A/D  STEER      C  CAMERA      R  RESTART      F11  FULLSCREEN      ESC  SETTINGS · QUIT"
 	_place(keys, Control.PRESET_BOTTOM_LEFT, 152, -84, 1300, 34)
 	var ver := _label(root, body, 22, Color(PINK, 0.9))
 	ver.text = AppInfo.version_label()
@@ -153,8 +156,43 @@ func _build_progress(root: Control, display: Font, body: Font, semi: Font) -> vo
 		y += 72.0
 
 
+## A save that could not be read (ProfileStore moved it aside): say so once, quietly, top centre.
+func _build_notice(root: Control, semi: Font) -> void:
+	var backup := ProfileStore.take_recovery_note()
+	if backup == "":
+		return
+	_notice = _label(root, semi, 22, Color(1, 1, 1, 0.92))
+	_notice.text = recovery_message(backup)
+	_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.02, 0.07, 0.88)
+	sb.border_color = Color(PINK, 0.8)
+	sb.border_width_left = 4
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 22
+	sb.content_margin_right = 22
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	_notice.add_theme_stylebox_override("normal", sb)
+	_place(_notice, Control.PRESET_CENTER_TOP, -560, 40, 1120, 76)
+	_notice_t = 9.0
+	print("PROFILE_RECOVERY ", backup)
+
+
+static func recovery_message(backup: String) -> String:
+	var where := ProjectSettings.globalize_path(backup) if backup.begins_with("user://") else backup
+	return "Your save could not be read, so a fresh profile was started.\nThe old file was kept: %s" % where
+
+
+func notice_text() -> String:
+	return _notice.text if _notice else ""
+
+
 func _process(delta: float) -> void:
 	_t += delta
+	if _notice:
+		_notice_t -= delta
+		_notice.modulate.a = clampf(_notice_t / 1.0, 0.0, 1.0)
 	_prompt.modulate.a = 0.55 + 0.45 * (0.5 + 0.5 * sin(_t * 4.0))
 
 

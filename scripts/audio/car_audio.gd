@@ -452,6 +452,7 @@ func on_results(new_best: bool) -> void:
 
 ## Stop and release every stream before quit (the audio server otherwise holds looping streams).
 func shutdown() -> void:
+	set_process(false)  # _process would call _bank.pick() on the null bank below
 	for c in get_children():
 		if c is AudioStreamPlayer:
 			(c as AudioStreamPlayer).stop()

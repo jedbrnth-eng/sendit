@@ -17,9 +17,10 @@ func _init(p := PATH) -> void:
 	path = p
 	var cf := ConfigFile.new()
 	if cf.load(path) == OK:
-		best_score = int(cf.get_value("best", "score", 0))
-		best_combo = int(cf.get_value("best", "combo", 0))
-		best_kmh = int(cf.get_value("best", "kmh", 0))
+		# Type-checked and clamped >= 0 (a hand-edited -5 or "lots" must not count as a record).
+		best_score = ProfileStore._int(cf.get_value("best", "score", 0), 1 << 40)
+		best_combo = ProfileStore._int(cf.get_value("best", "combo", 0), 1 << 40)
+		best_kmh = ProfileStore._int(cf.get_value("best", "kmh", 0), 10000)
 
 
 ## Record a finished run. Returns true when `score` beats the stored best score.

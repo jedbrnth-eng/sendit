@@ -29,6 +29,14 @@ const DEFAULTS := {
 }
 const DRAW_SCALE := [0.55, 0.8, 1.0]
 
+## Rows a quality preset (and AUTO) touches.
+const GFX_KEYS := ["shadows", "glow", "draw", "mirrors"]
+## AUTO quality's override for this session only (never saved): the graphics values AUTO dropped
+## to, and the player's values they replaced. It lapses as soon as the player changes any of
+## those rows or turns AUTO off: the player's choice always wins.
+static var auto_override := {}
+static var auto_base := {}
+
 ## The live, applied settings (Boot loads them; the menu edits and saves them).
 static var current: Settings
 ## Where they live (launch arg --settings-file=<path> overrides it, for probes and tests).
@@ -88,6 +96,41 @@ func quality() -> int:
 	return s if get_value("glow") == s and get_value("draw") == s else -1
 
 
+func gfx_values() -> Dictionary:
+	var out := {}
+	for k in GFX_KEYS:
+		out[k] = get_value(k)
+	return out
+
+
+func set_auto_override(over: Dictionary) -> void:
+	auto_base = gfx_values()
+	auto_override = over.duplicate()
+
+
+static func clear_auto_override() -> void:
+	auto_override = {}
+	auto_base = {}
+
+
+func auto_active() -> bool:
+	return not auto_override.is_empty() and bool(get_value("auto_quality")) and gfx_values() == auto_base
+
+
+## What gets applied: these settings, or a copy with AUTO's lower tier when it is active.
+func effective() -> Settings:
+	if not auto_active():
+		if not auto_override.is_empty() and self == current:
+			clear_auto_override()
+		return self
+	var e := Settings.new()
+	e.values = values.duplicate()
+	e.keys = keys
+	for k in auto_override:
+		e.values[k] = clamp_value(k, auto_override[k])
+	return e
+
+
 ## Slider 0..1 -> bus dB (0 is silent).
 static func volume_db(v: float) -> float:
 	return -80.0 if v <= 0.001 else linear_to_db(v)
@@ -114,6 +157,13 @@ func load_from(path := "") -> void:
 		return
 	var raw_version = cf.get_value("meta", "version", 1)
 	var version: int = raw_version if raw_version is int else 1
+	if version > MirrorConfig.SETTINGS_VERSION:
+		# Written by a newer build: keep that file as it was before this build rewrites it
+		# (going back to the newer build can restore it); read what this build understands.
+		var bak := "%s.v%d" % [path, version]
+		if not FileAccess.file_exists(bak):
+			DirAccess.copy_absolute(ProjectSettings.globalize_path(path), ProjectSettings.globalize_path(bak))
+		push_warning("settings: %s is from a newer build (v%d); kept a copy as %s" % [path, version, bak])
 	for k in DEFAULTS:
 		if cf.has_section_key("settings", k):
 			var v = cf.get_value("settings", k)
@@ -136,15 +186,49 @@ func load_from(path := "") -> void:
 # --- key bindings ------------------------------------------------------------------------------
 
 ## Bind `keycode` as the keyboard key for `action`; the key is taken off any other driving action
-## so one key never drives two things. The default arrow-key alternates stay.
-func rebind(action: String, keycode: int) -> void:
+## so one key never drives two things. The default arrow-key alternates stay. When that leaves the
+## other action with no key at all, it gets the key `action` is giving up (a swap). Returns the
+## swapped action ("" when none) so the menu can say so.
+func rebind(action: String, keycode: int) -> String:
 	if not action in REBINDABLE:
-		return
+		return ""
+	var before := {}
+	for a in REBINDABLE:
+		before[a] = effective_keys(a)
+	var leaving: int = before[action][0] if not (before[action] as Array).is_empty() else 0
 	for a in keys.keys():
 		if a != action and keys[a] == keycode:
 			keys.erase(a)
 	keys[action] = keycode
+	var swapped := ""
+	for a in REBINDABLE:
+		if a != action and not (before[a] as Array).is_empty() and effective_keys(a).is_empty() \
+				and leaving != 0 and leaving != keycode:
+			keys[a] = leaving
+			swapped = a
 	apply_keys()
+	return swapped
+
+
+## The keyboard keys an action ends up with (pure): its defaults with the first replaced by any
+## override, minus keys another action's override took.
+func effective_keys(action: String) -> Array:
+	var codes: Array = default_keys(action).duplicate()
+	if keys.has(action):
+		if codes.is_empty():
+			codes.append(keys[action])
+		else:
+			codes[0] = keys[action]
+	var out := []
+	for code in codes:
+		var owner := ""
+		for a in keys:
+			if keys[a] == code:
+				owner = a
+		if owner != "" and owner != action:
+			continue
+		out.append(code)
+	return out
 
 
 ## The keyboard key shown for an action (override, else the first default key).
@@ -165,22 +249,13 @@ static func key_name(code: int) -> String:
 ## Rebuild keyboard events: defaults from Boot.ACTIONS, the first key replaced by any override,
 ## and an overridden key removed from every other action.
 func apply_keys() -> void:
-	var taken := {}
-	for a in keys:
-		taken[keys[a]] = a
 	for action in REBINDABLE:
 		if not InputMap.has_action(action):
 			continue
-		var defaults: Array = default_keys(action)
 		for ev in InputMap.action_get_events(action):
 			if ev is InputEventKey:
 				InputMap.action_erase_event(action, ev)
-		var codes: Array = defaults.duplicate()
-		if keys.has(action):
-			codes[0] = keys[action]
-		for code in codes:
-			if taken.has(code) and taken[code] != action:
-				continue
+		for code in effective_keys(action):
 			var k := InputEventKey.new()
 			k.physical_keycode = code
 			InputMap.action_add_event(action, k)
@@ -199,11 +274,12 @@ static func default_keys(action: String) -> Array:
 
 ## Push everything into the engine. `tree` may be null (boot, before the scene exists).
 func apply(tree: SceneTree = null) -> void:
+	var gfx := effective()  # AUTO's transient tier (if any) for the graphics side only
 	AudioMix.ensure_buses()
 	_bus(&"Master", get_value("master"))
 	_bus(AudioMix.MUSIC, get_value("music"))
 	_bus(AudioMix.EFFECTS, get_value("sfx"))
-	Highway.draw_scale = DRAW_SCALE[get_value("draw")]
+	Highway.draw_scale = DRAW_SCALE[gfx.get_value("draw")]
 	ChaseCamera.fov_offset = get_value("fov")
 	ChaseCamera.start_hood = get_value("hood_cam")
 	apply_keys()
@@ -212,9 +288,9 @@ func apply(tree: SceneTree = null) -> void:
 		if DisplayMode.is_fullscreen(DisplayServer.window_get_mode()) != bool(get_value("fullscreen")):
 			DisplayServer.window_set_mode(want)
 	if tree:
-		tree.root.positional_shadow_atlas_size = 4096 if get_value("shadows") >= 2 else 0
-		tree.call_group(NightEnvironment.GROUP, "apply_settings", self)
-		tree.call_group(Mirrors.GROUP, "apply_settings", self)
+		tree.root.positional_shadow_atlas_size = 4096 if gfx.get_value("shadows") >= 2 else 0
+		tree.call_group(NightEnvironment.GROUP, "apply_settings", gfx)
+		tree.call_group(Mirrors.GROUP, "apply_settings", gfx)
 
 
 func _bus(name: StringName, v: float) -> void:

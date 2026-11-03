@@ -54,9 +54,13 @@ var _escapes := 0             # progression: police escapes this run, and their 
 var _escape_heat_sum := 0
 var _max_escape_heat := 0
 var recorder := ReplayRecorder.new()  # replay hook: passive recording for the end-of-round replay
+var _quitting := false
+var _finished := false
 
 
 func _ready() -> void:
+	# Closing the window runs the same shutdown as QUIT GAME (statics released, audio stopped).
+	get_tree().set_auto_accept_quit(false)
 	add_child(Prewarm.new())  # perf: load + build every streamed model before it is first needed
 	add_child(AutoQuality.new())  # perf: AUTO quality governor (Settings "auto_quality")
 	add_child(NightEnvironment.new())
@@ -240,7 +244,7 @@ func _show_results() -> void:
 			_results.visible = false
 			_results.process_mode = Node.PROCESS_MODE_DISABLED
 			recorder.tail = ReplayRecorder.WRECK_TAIL_S
-			get_tree().create_timer(ReplayRecorder.WRECK_TAIL_S).timeout.connect(_play_replay)
+			_after(ReplayRecorder.WRECK_TAIL_S, _play_replay)
 		else:
 			_play_replay()
 	print("RESULTS score=%d best_combo=%d gaps=%d max_kmh=%d dist_m=%d wrecks=%d reason=%s new_best=%s" % [
@@ -309,7 +313,21 @@ func _on_busted() -> void:
 		return
 	player.autopilot = BustedHold.new(traffic)
 	audio.on_crash(40.0)
-	get_tree().create_timer(1.8).timeout.connect(func(): session.finish("busted"))
+	# A child Timer: it waits out a pause (no results under the pause menu) and dies with the
+	# scene on a restart (a SceneTreeTimer kept running through both).
+	_after(1.8, func(): session.finish("busted"))
+
+
+## One-shot timer owned by this scene: paused with the tree, freed by a scene reload.
+func _after(seconds: float, cb: Callable) -> Timer:
+	var t := Timer.new()
+	t.one_shot = true
+	t.wait_time = seconds
+	t.timeout.connect(cb)
+	t.timeout.connect(t.queue_free)
+	add_child(t)
+	t.start()
+	return t
 
 
 ## Progression: XP + credits from this run's validated numbers. Your own runs are saved; autopilot
@@ -377,6 +395,8 @@ func _unhandled_input(e: InputEvent) -> void:
 ## Settings overlay from the title screen (the attract run keeps going behind it).
 func open_settings() -> SettingsMenu:
 	var m := SettingsMenu.new()
+	m.show_quit = true
+	m.quit_requested.connect(quit_game)
 	_menu = m
 	add_child(m)
 	return m
@@ -396,8 +416,27 @@ func open_pause() -> PauseMenu:
 	p.quit_to_title.connect(func():
 		get_tree().paused = false
 		_go("title"))
+	p.quit_game.connect(quit_game)
 	add_child(p)
 	return p
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit_game()
+
+
+## QUIT GAME (title settings / pause menu) and the window's close button: unsaved settings are
+## saved, then the normal shutdown (_finish) releases statics and audio before quitting.
+func quit_game() -> void:
+	if _quitting:
+		return
+	_quitting = true
+	print("QUIT_GAME screen=%s" % screen)
+	if is_instance_valid(_menu) and _menu is SettingsMenu:
+		Settings.get_current().save()
+	get_tree().paused = false
+	_finish()
 
 
 func _physics_process(delta: float) -> void:
@@ -442,6 +481,9 @@ func _snap(f: int) -> void:
 
 ## Print the run stats, release statics and quit (exit_code: probes report their verdict).
 func _finish(exit_code := 0) -> void:
+	if _finished:
+		return
+	_finished = true
 	print("RUN_STATS frames=%d gaps=%d crashes=%d max_kmh=%d banked=%d best_combo=%d live=%d dist_m=%d screen=%s state=%s" % [
 		_frame, _stats.gaps, _stats.crashes, int(_stats.max_kmh), scorer.banked_total, scorer.best_combo,
 		scorer.combo_points, int(-player.position.z), screen, RunSession.State.keys()[session.state]])

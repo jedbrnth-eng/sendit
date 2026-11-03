@@ -15,6 +15,9 @@ const VERSION := 1
 static var file := PATH
 ## The live profile (loaded on first use).
 static var current: Profile
+## Set when a load moved an unreadable file aside: that backup's path (the title screen tells the
+## player once, see take_recovery_note()).
+static var recovery_note := ""
 
 
 static func get_current() -> Profile:
@@ -65,7 +68,9 @@ static func load_from(path := "") -> Profile:
 		and int(cf.get_value("meta", "version", -1)) >= 1 and int(cf.get_value("meta", "version", -1)) <= VERSION
 	if not ok:
 		push_warning("profile: %s unreadable or unknown version; kept as .corrupt, starting fresh" % path)
-		DirAccess.rename_absolute(_abs(path), _abs(path + ".corrupt"))
+		var backup := backup_path(path)
+		DirAccess.rename_absolute(_abs(path), _abs(backup))
+		recovery_note = backup
 		p.goal_seed = _fresh_seed()
 		p.ensure_goals()
 		return p
@@ -109,6 +114,24 @@ static func load_from(path := "") -> Profile:
 		if CarCatalog.has(car) and t is String:
 			p.set_plate(car, t)
 	return p
+
+
+## Where an unreadable file is moved: <path>.corrupt, or a numbered name when that backup already
+## exists (an older backup is never overwritten).
+static func backup_path(path: String) -> String:
+	var b := path + ".corrupt"
+	var n := 2
+	while FileAccess.file_exists(b):
+		b = "%s.corrupt%d" % [path, n]
+		n += 1
+	return b
+
+
+## The pending recovery backup path ("" when none), cleared so it is reported once.
+static func take_recovery_note() -> String:
+	var n := recovery_note
+	recovery_note = ""
+	return n
 
 
 ## Car keys of a per-car section, with retired ids (CarCatalog.ALIASES) moved to their replacement.
