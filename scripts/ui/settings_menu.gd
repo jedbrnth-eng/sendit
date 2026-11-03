@@ -8,6 +8,7 @@ class_name SettingsMenu extends CanvasLayer
 ## left/right change the focused row. Every change applies live; closing saves to user://.
 
 signal closed
+signal quit_requested   # QUIT GAME row (title settings only: show_quit)
 
 const DISPLAY := "res://assets/fonts/RussoOne-Regular.ttf"
 const BODY := "res://assets/fonts/ChakraPetch-Bold.ttf"
@@ -15,6 +16,13 @@ const SEMI := "res://assets/fonts/ChakraPetch-SemiBold.ttf"
 const GOLD := Color(1.0, 0.82, 0.35)
 const PINK := Color(1.0, 0.24, 0.52)
 const CYAN := Color(0.3, 0.88, 1.0)
+## A key capture nobody answers (pad-only player, wrong row) gives up after this many seconds.
+const REBIND_TIMEOUT_S := 6.0
+## Pad buttons that cancel a key capture (pads keep their fixed layout, so nothing is bound).
+const CANCEL_BUTTONS := [JOY_BUTTON_B, JOY_BUTTON_BACK]
+## Keys a capture ignores (keeps waiting): bare modifiers and keys with no physical code.
+const IGNORED_KEYS := [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META, KEY_CAPSLOCK, KEY_NONE]
+const HINT := "↑↓ SELECT    ←→ CHANGE    ESC / B  SAVE & BACK"
 const ACTION_NAMES := {"throttle": "THROTTLE", "brake": "BRAKE", "steer_left": "STEER LEFT",
 	"steer_right": "STEER RIGHT", "handbrake": "HANDBRAKE", "camera": "CAMERA", "restart": "RESTART",
 	"mirrors": "MIRRORS"}
@@ -27,9 +35,12 @@ var _list: VBoxContainer
 var _scroll: ScrollContainer
 var _refresh: Array[Callable] = []
 var _waiting_action := ""        # rebinding: next key press goes to this action
+var _wait_left := 0.0            # seconds before an unanswered key capture cancels itself
 var _key_buttons := {}           # action -> Button
 var _hint: Label
+var _hint_t := 0.0
 var first_focus: Control
+var show_quit := false           # title: add a QUIT GAME row (the pause menu has its own)
 
 
 func _ready() -> void:
@@ -73,7 +84,7 @@ func _ready() -> void:
 	var title := _label(col, _display, 64, Color.WHITE)
 	title.text = "SETTINGS"
 	_hint = _label(col, _semi, 22, Color(1, 1, 1, 0.55))
-	_hint.text = "↑↓ SELECT    ←→ CHANGE    ESC / B  SAVE & BACK"
+	_hint.text = HINT
 
 	_scroll = ScrollContainer.new()
 	_scroll.follow_focus = true
@@ -92,23 +103,27 @@ func _ready() -> void:
 	_section("GRAPHICS")
 	_option("QUALITY PRESET", ["LOW", "MEDIUM", "HIGH"],
 		func(): return settings.quality(),
-		func(i): settings.set_quality(i),
+		func(i):
+			Settings.clear_auto_override()  # the player's pick beats AUTO's session tier
+			settings.set_quality(i),
 		"CUSTOM")
 	_option("AUTO QUALITY", ["OFF", "ON"], func(): return 1 if settings.get_value("auto_quality") else 0,
-		func(i): settings.set_value("auto_quality", i == 1))
-	if AutoQuality.note != "":
+		func(i):
+			Settings.clear_auto_override()
+			settings.set_value("auto_quality", i == 1))
+	if AutoQuality.note != "" and not Settings.auto_override.is_empty():
 		var n := _label(_list, _semi, 20, Color(GOLD, 0.85))
 		n.text = "   " + AutoQuality.note
-	_option("SHADOWS", Settings.LEVELS, func(): return settings.get_value("shadows"), func(i): settings.set_value("shadows", i))
-	_option("GLOW", Settings.LEVELS, func(): return settings.get_value("glow"), func(i): settings.set_value("glow", i))
-	_option("DRAW DISTANCE", Settings.LEVELS, func(): return settings.get_value("draw"), func(i): settings.set_value("draw", i))
+	_option("SHADOWS", Settings.LEVELS, func(): return settings.get_value("shadows"), func(i): _set_gfx("shadows", i))
+	_option("GLOW", Settings.LEVELS, func(): return settings.get_value("glow"), func(i): _set_gfx("glow", i))
+	_option("DRAW DISTANCE", Settings.LEVELS, func(): return settings.get_value("draw"), func(i): _set_gfx("draw", i))
 	_section("DISPLAY & CAMERA")
 	_option("FULLSCREEN", ["OFF", "ON"], func(): return 1 if settings.get_value("fullscreen") else 0,
 		func(i): settings.set_value("fullscreen", i == 1))
 	_slider("FIELD OF VIEW", "fov", -10.0, 15.0, 1.0, func(v): return "%+d°" % roundi(v))
 	_option("START CAMERA", ["CHASE", "HOOD"], func(): return 1 if settings.get_value("hood_cam") else 0,
 		func(i): settings.set_value("hood_cam", i == 1))
-	_option("MIRRORS", MirrorConfig.MODE_NAMES, func(): return settings.get_value("mirrors"), func(i): settings.set_value("mirrors", i))
+	_option("MIRRORS", MirrorConfig.MODE_NAMES, func(): return settings.get_value("mirrors"), func(i): _set_gfx("mirrors", i))
 	_option("MIRROR SIZE", MirrorConfig.SIZE_NAMES, func(): return settings.get_value("mirror_size"), func(i): settings.set_value("mirror_size", i))
 	_option("REPLAY", ["OFF", "ON"], func(): return 1 if settings.get_value("replay") else 0,
 		func(i): settings.set_value("replay", i == 1))
@@ -118,10 +133,16 @@ func _ready() -> void:
 	_section("")
 	var reset := _button_row("RESET TO DEFAULTS", func():
 		settings.reset()
+		Settings.clear_auto_override()
 		_apply()
 		_refresh_all())
 	reset.add_theme_color_override("font_color", PINK)
 	_button_row("BACK", close)
+	if show_quit:
+		var q := _button_row("QUIT GAME", func():
+			settings.save()
+			quit_requested.emit())
+		q.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	_refresh_all()
 	first_focus = _list.get_child(1).get_child(1) as Control  # MASTER VOLUME control
 	first_focus.grab_focus.call_deferred()
@@ -137,24 +158,92 @@ func close() -> void:
 
 
 func _unhandled_input(e: InputEvent) -> void:
-	if _waiting_action == "" and (e.is_action_pressed("ui_cancel") or e.is_action_pressed("pause")):
-		get_viewport().set_input_as_handled()
+	if _waiting_action != "":
+		return
+	if e.is_action_pressed("ui_cancel") or e.is_action_pressed("pause") or _is_cancel_button(e):
+		_handled()
 		close()
+	elif owns_event(e):
+		_handled()  # the menu owns input: C / M / pad Y must not toggle the camera or mirrors behind it
+
+
+## Key and pad-button presses the open menu keeps from the game behind it (title overlay).
+func owns_event(e: InputEvent) -> bool:
+	return (e is InputEventKey or e is InputEventJoypadButton) and e.is_pressed()
+
+
+static func _is_cancel_button(e: InputEvent) -> bool:
+	return e is InputEventJoypadButton and e.pressed and (e as InputEventJoypadButton).button_index in CANCEL_BUTTONS
+
+
+func _handled() -> void:
+	var vp := get_viewport()
+	if vp:
+		vp.set_input_as_handled()
 
 
 ## Rebinding grabs the next key before the GUI sees it (so Enter/Space/arrows can be bound too).
+## Esc, pad B / Back and the timeout cancel; other pad input is swallowed while waiting.
 func _input(e: InputEvent) -> void:
 	if _waiting_action == "":
 		return
+	if _is_cancel_button(e):
+		_handled()
+		_end_capture()
+		return
+	if e is InputEventJoypadButton or e is InputEventJoypadMotion:
+		_handled()  # don't let the pad move focus off the waiting row
+		return
 	if e is InputEventKey and e.pressed and not e.echo:
-		get_viewport().set_input_as_handled()
+		_handled()
 		var k := e as InputEventKey
+		if k.physical_keycode in IGNORED_KEYS:
+			return  # a bare modifier is not a binding: keep waiting
+		var swapped := ""
 		if k.physical_keycode != KEY_ESCAPE:
-			settings.rebind(_waiting_action, k.physical_keycode)
-		var b: Button = _key_buttons[_waiting_action]
-		_waiting_action = ""
-		_refresh_all()
+			swapped = settings.rebind(_waiting_action, k.physical_keycode)
+		_end_capture()
+		if swapped != "":
+			_flash_hint("%s MOVED TO %s (IT LOST ITS ONLY KEY)" % [ACTION_NAMES.get(swapped, swapped.to_upper()),
+				Settings.key_name(Settings.key_for(swapped))])
+
+
+func _process(delta: float) -> void:
+	if _hint_t > 0.0:
+		_hint_t -= delta
+		if _hint_t <= 0.0:
+			_hint.text = HINT
+			_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
+	if _waiting_action == "":
+		return
+	_wait_left -= delta
+	if _wait_left <= 0.0:
+		_end_capture()
+
+
+func _flash_hint(text: String) -> void:
+	_hint.text = text
+	_hint.add_theme_color_override("font_color", GOLD)
+	_hint_t = 3.5
+
+
+func _begin_capture(action: String) -> void:
+	_waiting_action = action
+	_wait_left = REBIND_TIMEOUT_S
+
+
+func _end_capture() -> void:
+	var b: Button = _key_buttons.get(_waiting_action)
+	_waiting_action = ""
+	_refresh_all()
+	if b and b.is_inside_tree():
 		b.grab_focus()
+
+
+## A graphics row the player sets by hand ends AUTO's session override (their choice wins).
+func _set_gfx(key: String, v) -> void:
+	Settings.clear_auto_override()
+	settings.set_value(key, v)
 
 
 func _apply() -> void:
@@ -262,8 +351,8 @@ func _key_row(action: String) -> void:
 	b.custom_minimum_size = Vector2(360, 44)
 	_key_buttons[action] = b
 	b.pressed.connect(func():
-		_waiting_action = action
-		b.text = "PRESS A KEY  (ESC CANCELS)")
+		_begin_capture(action)
+		b.text = "PRESS A KEY  (ESC / B CANCELS)")
 	_refresh.append(func():
 		if _waiting_action != action:
 			b.text = Settings.key_name(Settings.key_for(action)))

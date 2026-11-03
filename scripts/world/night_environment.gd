@@ -86,7 +86,7 @@ func _ready() -> void:
 	add_child(PerfProbe.new())
 	add_child(SpeedFx.new())
 	add_to_group(GROUP)
-	apply_settings(Settings.get_current())
+	apply_settings(Settings.get_current().effective())
 
 
 ## Graphics settings (0 low .. 2 high; HIGH is the look above). Shadows: moon shadow + SSAO from

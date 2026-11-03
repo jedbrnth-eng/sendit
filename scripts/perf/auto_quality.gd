@@ -4,9 +4,12 @@
 
 class_name AutoQuality extends CanvasLayer
 ## AUTO quality (Settings "auto_quality"): feeds every frame's wall-clock time to a
-## QualityGovernor during real play and, when it reports a slow 5 s window (p95 over 25 ms),
-## drops the graphics preset one tier (HIGH -> MEDIUM -> LOW), saves it and says so on screen.
-## The settings menu shows the last change (AutoQuality.note). Never steps up by itself.
+## QualityGovernor during a live run only (QualityGovernor.should_judge: never the title, garage,
+## results, replay, pause menu, the first seconds of a run or while Prewarm builds) and, when it
+## reports a slow 5 s window (p95 over 25 ms), drops the applied graphics one tier
+## (HIGH -> MEDIUM -> LOW) for this session and says so on screen. The player's saved preset is
+## never changed: AUTO's tier is a transient override (Settings.auto_override) that lapses when
+## the player sets any graphics row. The settings menu shows it (AutoQuality.note).
 ## Proof/attract runs (--autodrive, --capture) leave it off so their numbers stay comparable;
 ## --auto-quality forces it on for a test.
 
@@ -45,26 +48,44 @@ func _process(delta: float) -> void:
 	_last_us = now
 	_show_t = maxf(0.0, _show_t - delta)
 	_label.modulate.a = clampf(_show_t / 0.5, 0.0, 1.0)
-	if not _enabled or not settings.get_value("auto_quality") or get_tree().paused or ms <= 0.0:
+	if not _enabled or not settings.get_value("auto_quality") or ms <= 0.0 or not _judging():
 		gov.reset()
 		return
 	if gov.feed(ms):
 		step_down()
 
 
-## Drop one tier now (also the test hook). Returns the new level, or -1 when already LOW.
+## Only a live run counts (see QualityGovernor.should_judge); --auto-quality judges any screen
+## that is running (test hook for proof runs on the "drive" screen).
+func _judging() -> bool:
+	var m := get_parent()
+	var session: RunSession = m.get("session") if m != null else null
+	if session == null:
+		return false
+	var screen := String(m.get("screen"))
+	if LaunchArgs.has("auto-quality") and screen == "drive":
+		screen = "run"
+	return QualityGovernor.should_judge(screen, session.is_running(), get_tree().paused,
+		session.duration_s - session.time_left, Prewarm.pending())
+
+
+## Drop one tier now for this session (also the test hook). Returns the new level, or -1 when
+## already LOW. The player's own settings (and the file) are left alone.
 func step_down() -> int:
-	var lvl := settings.quality()
+	var eff := settings.effective()
+	var lvl := eff.quality()
 	var next := QualityGovernor.next_level(lvl)
 	if lvl == 0:
 		return -1
 	var from: String = Settings.LEVELS[lvl] if lvl >= 0 else "CUSTOM"
-	var mirrors: int = settings.get_value("mirrors")
-	settings.set_quality(next)
-	settings.set_value("mirrors", QualityGovernor.mirrors_after_step(mirrors, settings.get_value("mirrors")))
-	settings.save()
+	var prior: int = eff.get_value("mirrors")
+	var preset := Settings.new()
+	preset.set_quality(next)
+	var over := preset.gfx_values()
+	over["mirrors"] = QualityGovernor.mirrors_after_step(prior, preset.get_value("mirrors"))
+	settings.set_auto_override(over)
 	settings.apply(get_tree())
-	note = "AUTO lowered %s -> %s (slow frames)" % [from, Settings.LEVELS[next]]
+	note = "AUTO lowered %s -> %s for this session (your setting is kept)" % [from, Settings.LEVELS[next]]
 	_label.text = "GRAPHICS  ·  " + note
 	_show_t = 3.5
 	print("AUTO_QUALITY ", note)

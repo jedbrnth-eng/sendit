@@ -51,6 +51,7 @@ var roll_gain := 0.045                       # < 0 leans into turns (bikes)
 var _rider: Node3D
 var _fx: CarStyleFx
 var _lift_from := 0.0                        # throttle held before a lift (backfire trigger)
+var _analog_steer := false                   # last steering came from the stick (no ramp)
 
 
 func _ready() -> void:
@@ -134,6 +135,39 @@ static func ramp_steer(current: float, target: float, delta: float) -> float:
 	return move_toward(current, target, rate * delta)
 
 
+## Steering from the player's input (pure, unit-tested): a stick is already analog, so it maps
+## straight through a gentle centre curve (fine lane holding, full lock at full deflection) with a
+## small dead band for resting-stick noise; digital keys go through ramp_steer.
+const STICK_DEAD := 0.06
+const STICK_CURVE := 1.3
+
+static func steer_from_input(current: float, raw: float, analog: bool, delta: float) -> float:
+	if not analog:
+		return ramp_steer(current, raw, delta)
+	var a := absf(raw)
+	if a <= STICK_DEAD:
+		return 0.0
+	return signf(raw) * pow(clampf((a - STICK_DEAD) / (1.0 - STICK_DEAD), 0.0, 1.0), STICK_CURVE)
+
+
+## Which device steers now (pure): a stick push past the action deadzone switches to analog, a
+## steering key press switches back to the keyboard ramp; anything else keeps the current source.
+static func analog_after(analog: bool, e: InputEvent) -> bool:
+	if e is InputEventJoypadMotion:
+		var m := e as InputEventJoypadMotion
+		if m.axis == JOY_AXIS_LEFT_X and absf(m.axis_value) > 0.15:
+			return true
+		return analog
+	if e is InputEventKey and e.pressed and InputMap.has_action("steer_left") and InputMap.has_action("steer_right") \
+			and (e.is_action("steer_left") or e.is_action("steer_right")):
+		return false
+	return analog
+
+
+func _input(e: InputEvent) -> void:
+	_analog_steer = analog_after(_analog_steer, e)
+
+
 ## Heading update (pure, unit-tested). Fast cars turn less but still dart between lanes;
 ## letting go recentres quicker at speed so a tap is one clean lane change, not a drift.
 static func steer_step(yaw0: float, steer: float, speed_mps: float, ctrl: float, delta: float,
@@ -169,8 +203,10 @@ func _read_input() -> void:
 		throttle = c.y
 		brake = c.z
 		return
-	# Keys are digital: ramp the steer so a tap is a smooth lane change, not a twitch.
-	steer_input = ramp_steer(steer_input, Input.get_axis("steer_left", "steer_right"), get_physics_process_delta_time())
+	# Keys are digital: ramp the steer so a tap is a smooth lane change, not a twitch. A stick
+	# is analog already: it steers directly (steer_from_input).
+	steer_input = steer_from_input(steer_input, Input.get_axis("steer_left", "steer_right"), _analog_steer,
+		get_physics_process_delta_time())
 	throttle = Input.get_action_strength("throttle")
 	brake = Input.get_action_strength("brake")
 	if Input.is_action_pressed("handbrake"):

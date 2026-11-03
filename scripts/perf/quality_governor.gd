@@ -14,6 +14,8 @@ const LIMIT_MS := 25.0
 const WINDOW_S := 5.0
 const GRACE_S := 3.0
 const STALL_MS := 500.0
+## Seconds into a run (after GO) before any frame counts: the countdown hand-off, first chunks.
+const RUN_GRACE_S := 4.0
 
 var _window := PackedFloat32Array()
 var _window_ms := 0.0
@@ -56,3 +58,12 @@ static func mirrors_after_step(prior: int, preset: int) -> int:
 ## The tier below `level` (custom mixes, -1, drop to LOW).
 static func next_level(level: int) -> int:
 	return maxi(level - 1, 0) if level >= 0 else 0
+
+
+## Gate (pure): only frames of a live, unpaused run on the "run" screen are judged, never the
+## title/garage/results/replay, the pause menu, the first RUN_GRACE_S seconds or while Prewarm
+## is still building models. (The "drive" screen is the autopilot proof path: never judged.)
+static func should_judge(screen: String, running: bool, paused: bool, run_elapsed_s: float,
+		prewarm_pending: int) -> bool:
+	return screen == "run" and running and not paused and prewarm_pending <= 0 \
+		and run_elapsed_s >= RUN_GRACE_S

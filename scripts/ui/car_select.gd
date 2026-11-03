@@ -45,6 +45,7 @@ var _small_name: Label
 var _wallet: Label
 var _level: Label
 var _toast: Label
+var _toast_tw: Tween
 var _hint: Label
 var _row_nodes: Array = []   # [{panel, caption, value, status, swatch, count}]
 var _edit: LineEdit
@@ -534,7 +535,10 @@ func _toast_say(text: String, good := true) -> void:
 	_toast.text = text
 	_toast.add_theme_color_override("font_color", LIME if good else PINK)
 	_toast.modulate.a = 1.0
+	if _toast_tw and _toast_tw.is_valid():
+		_toast_tw.kill()  # a spammed Enter restarts the toast instead of stacking fades
 	var tw := create_tween()
+	_toast_tw = tw
 	tw.tween_interval(1.6)
 	tw.tween_property(_toast, "modulate:a", 0.0, 0.5)
 
