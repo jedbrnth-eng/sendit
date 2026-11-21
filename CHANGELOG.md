@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Security
+- **Releases carry a build attestation**: a record, signed through GitHub, that the three downloads were built by the release workflow from a given commit. Check one with `gh attestation verify SendIt-macOS.zip --repo jedbrnth-eng/sendit`.
+- The release workflow accepts only a plain `x.y.z` in `VERSION` and passes values to its scripts through the environment.
+
 ## [0.3.1] - 2026-10-29
 
 Much harder police, four mirror modes, smoother streaming, new sound, and the Naga X is retired.

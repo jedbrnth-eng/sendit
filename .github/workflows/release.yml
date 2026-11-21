@@ -20,13 +20,18 @@ jobs:
           persist-credentials: false
       - name: Read version
         id: v
-        run: echo "tag=v$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+        run: |
+          v="$(tr -d '[:space:]' < VERSION)"
+          # Plain x.y.z only: the value becomes a tag, a title and part of shell commands below.
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::VERSION must look like 1.2.3, got: $v"; exit 1; }
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
       - name: Stop if this version is already released
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
         run: |
-          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then
-            echo "::error::${{ steps.v.outputs.tag }} already exists. Bump VERSION and add a CHANGELOG section first."; exit 1
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::$TAG already exists. Bump VERSION and add a CHANGELOG section first."; exit 1
           fi
       - name: Install Godot (pinned, checksum-verified)
         run: scripts/ci/install-godot.sh
@@ -94,7 +99,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
+      contents: write        # create the release and its tag
+      # For the build attestation: a record, signed through GitHub, that the downloads were built by this workflow
+      # from this commit. Check one with: gh attestation verify SendIt-macOS.zip --repo jedbrnth-eng/sendit
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -103,16 +112,25 @@ jobs:
         with:
           name: dist
           path: dist
+      - name: Check the downloads against SHA256SUMS
+        run: cd dist && sha256sum -c SHA256SUMS
+      - name: Attest the downloads
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
         run: |
           v="$(tr -d '[:space:]' < VERSION)"
+          # Plain x.y.z only: the value becomes a tag, a title and part of shell commands below.
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::VERSION must look like 1.2.3, got: $v"; exit 1; }
           # Release notes = the download steps first (for everyone), then this version's CHANGELOG section.
           cat .github/release-notes.md > notes.md
           echo >> notes.md
           awk -v h="## [$v]" 'index($0, h) == 1 {on = 1; print "## Changes in this version"; next} on && /^## \[/ {exit} on' CHANGELOG.md >> notes.md
-          (cd dist && sha256sum -c SHA256SUMS)
           gh release create "v$v" dist/SendIt-macOS.zip dist/SendIt-Windows-x86_64.zip dist/SendIt-Linux-x86_64.tar.gz dist/SHA256SUMS \
-            --repo "${{ github.repository }}" --target "${{ github.sha }}" \
+            --repo "$REPO" --target "$SHA" \
             --title "SendIt v$v" --notes-file notes.md
