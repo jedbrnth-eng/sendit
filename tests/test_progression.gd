@@ -262,7 +262,7 @@ func test_goals_pay_once_and_rotate() -> void:
 const GOAL_DT := 1.0 / 120.0
 const ROLLING_START_KMH := 130.0   # the countdown hands the car over at this cruise (main.gd)
 const CLEAR_ROAD_S := 12.0         # the longest flat-out stretch a speed goal may ask for
-const DISTANCE_MARGIN := 0.9       # a distance goal leaves 10% for traffic, even in a perfect run
+const DISTANCE_MARGIN := 0.8       # a distance goal leaves 20% for traffic, lifts and wrecks (11 km was 87% of a perfect run in the Rotor FX)
 
 
 ## Flat out on an empty road from the rolling start: Vector2(km/h reached, metres covered).

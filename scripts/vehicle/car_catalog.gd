@@ -72,7 +72,8 @@ const VEHICLES := [
 ]
 
 ## Shelved (too easy: it slips between cars). Model, generator and rider stay in the repo;
-## move this entry back into VEHICLES to re-enable once the gap-slipping is balanced.
+## move this entry back into VEHICLES to re-enable once the gap-slipping is balanced. Its top end (about 229 km/h
+## after 12 s flat out) is under the 230 km/h goal, so tests/test_progression.gd fails until the goals or its specs change.
 const SHELVED_SOI_ROCKET := {
 		"id": "soi_rocket", "name": "SOI ROCKET", "tagline": "Underbone moped. Fits gaps nothing else can. Don't touch anything.",
 		"model": "res://assets/cars/soi_rocket/soi_rocket.glb", "length": 1.92, "wheels": 2,

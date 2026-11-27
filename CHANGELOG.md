@@ -7,7 +7,7 @@
 - The release workflow accepts only a plain `x.y.z` in `VERSION` and passes values to its scripts through the environment.
 
 ### Fixed
-- **Run goals no car could finish.** Drag keeps every car below its listed top speed (the Voltage GT's 310 is about 267 km/h on the road, the fastest car about 274), so "Hit 285 km/h" could never be met and "Hit 270 km/h" only in the Kaze RT. A goal leaves its slot only when it is met, so one of the three goal slots could be stuck for good: from level 19 unless you drove the Kaze RT, from level 25 in any car. Speed goals are now 220, 230, 238, 244 and 248 km/h and the longest distance goal is 11 km instead of 12; a test drives every garage car flat out and fails if a goal is out of reach. Saves holding one of the old targets get the current one for their level.
+- **Run goals no car could finish.** Drag keeps every car below its listed top speed (the Voltage GT's 310 is about 267 km/h on the road, the fastest car about 274), so "Hit 285 km/h" could never be met and "Hit 270 km/h" only in the Kaze RT. A goal leaves its slot only when it is met, so one of the three goal slots could be stuck for good: from level 19 unless you drove the Kaze RT, from level 25 in any car. Speed goals are now 220, 230, 238, 244 and 248 km/h and the longest distance goal is 10 km instead of 12 (a perfect, empty-road run in the slowest car covers about 12.7 km); a test drives every garage car flat out and fails if a goal is out of reach. Saves holding one of the old targets get the current one for their level.
 
 ## [0.3.1] - 2026-10-29
 
