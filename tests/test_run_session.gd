@@ -79,3 +79,16 @@ func test_bad_delta_ignored() -> void:
 	r.tick(NAN, 100.0)
 	r.tick(-3.0, 100.0)
 	runner.check(is_equal_approx(r.time_left, r.duration_s), "bad delta ignored")
+
+
+func test_focus_loss_pauses_only_a_run_the_player_drives() -> void:
+	var r := RunSession.new()
+	runner.check(not r.pauses_on_focus_loss(false, false), "attract mode keeps going")
+	r.start()
+	runner.check(r.pauses_on_focus_loss(false, false), "the countdown pauses (the run must not start with nobody there)")
+	r.tick(3.1, 120.0)
+	runner.check(r.pauses_on_focus_loss(false, false), "a live run pauses")
+	runner.check(not r.pauses_on_focus_loss(true, false), "an autopilot run keeps going")
+	runner.check(not r.pauses_on_focus_loss(false, true), "already paused or in a menu: nothing to do")
+	r.finish("time")
+	runner.check(not r.pauses_on_focus_loss(false, false), "the results screen keeps going")

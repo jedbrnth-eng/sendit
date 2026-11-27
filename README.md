@@ -109,7 +109,7 @@ Your level, credits, garage and personal best are saved on your computer and sho
 | `R` | Restart the run; on the results screen, watch the replay again |
 | `Enter` / `Space` / `Esc` | Skip the replay |
 | `F11` or `Alt`+`Enter` | Fullscreen (saved, same as the setting) |
-| `Esc` | Pause menu during a run (resume, settings, restart, quit to title); Settings on the title screen |
+| `Esc` | Pause menu during a run (resume, settings, restart, quit to title); Settings on the title screen. A run also pauses by itself when you switch to another app |
 | Any other key | Title screen: go to car select |
 
 **Car select and garage:** `A` `D` or arrows to change car or item, `Q` `E` to switch tabs (CAR, PAINT, WHEELS, LIGHTS, EXTRAS), `W` `S` to pick a row, `Enter` to buy or fit an item (or drive, on the CAR tab), `Space` to drive from any tab, `Esc` to go back.

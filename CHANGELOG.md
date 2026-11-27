@@ -6,6 +6,9 @@
 - **Releases carry a build attestation**: a record, signed through GitHub, that the three downloads were built by the release workflow from a given commit. Check one with `gh attestation verify SendIt-macOS.zip --repo jedbrnth-eng/sendit`.
 - The release workflow accepts only a plain `x.y.z` in `VERSION` and passes values to its scripts through the environment.
 
+### Added
+- **A run pauses when you switch away.** Alt-tab or click another app during the countdown or a run and the pause menu comes up instead of the car driving on into traffic. Coming back does not resume by itself: pick RESUME when you are ready. The title screen, the results and autopilot runs are not paused. `--no-focus-pause` turns it off (for filming); `tools/probe_focus_pause.gd` checks it headless.
+
 ## [0.3.1] - 2026-10-29
 
 Much harder police, four mirror modes, smoother streaming, new sound, and the Naga X is retired.

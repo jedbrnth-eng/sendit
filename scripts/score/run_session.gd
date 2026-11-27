@@ -77,6 +77,13 @@ func is_running() -> bool:
 	return state == State.RUNNING
 
 
+## Should the game pause when its window loses focus? Only while the player is driving or about to
+## (countdown): a run left alone wrecks out within seconds. Attract mode, the results and autopilot
+## runs (`assisted`) keep going, and so does anything already paused or behind a menu.
+func pauses_on_focus_loss(assisted: bool, already_paused: bool) -> bool:
+	return (state == State.COUNTDOWN or state == State.RUNNING) and not assisted and not already_paused
+
+
 func wrecks_left() -> int:
 	return maxi(0, max_wrecks - wrecks)
 
