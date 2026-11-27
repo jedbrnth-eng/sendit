@@ -12,11 +12,12 @@ signal scraped(strength: float)
 
 const MODEL := "res://assets/cars/voltage/voltage_gt.glb"  # hero (see CarCatalog for the garage)
 const SIGNATURE := Color(0.35, 0.9, 1.0)     # ice-blue front light blade
+const DRAG := 0.00042
 
 @export var max_kmh := 310.0
 @export var accel := 9.5           # m/s^2 near standstill
 @export var brake_decel := 16.0
-@export var drag := 0.00042        # quadratic drag coefficient
+@export var drag := DRAG           # quadratic drag coefficient
 @export var steer_rate := 1.9      # rad/s yaw rate at low speed
 @export var max_yaw := deg_to_rad(28)
 
@@ -104,12 +105,7 @@ func _physics_process(delta: float) -> void:
 	if stun > 0.0:
 		stun -= delta
 		ctrl = 0.25
-	# Longitudinal
-	var t := clampf(speed / (max_kmh / 3.6), 0.0, 1.0)
-	var a := throttle * accel * (1.0 - t * t) * ctrl
-	a -= brake * brake_decel
-	a -= drag * speed * speed + 0.15
-	speed = maxf(0.0, speed + a * delta)
+	speed = accel_step(speed, throttle, brake, ctrl, delta, max_kmh, accel, brake_decel, drag)
 	yaw = steer_step(yaw, steer_input, speed, ctrl, delta, steer_rate, max_yaw)
 	var fwd := Vector3(sin(yaw) * -1.0, 0, -cos(yaw))
 	position += fwd * speed * delta
@@ -125,6 +121,18 @@ func _physics_process(delta: float) -> void:
 	if _rider:
 		_rider.rotation.z = -_roll * 0.35  # model space is turned 180 degrees: same lean direction
 	_update_fx(delta)
+
+
+## Speed update (pure, unit-tested): thrust fades toward max_kmh, quadratic drag plus rolling
+## resistance always pull back. Drag means a car tops out below its max_kmh (the Voltage GT's 310
+## is about 267 on the road), so anything that asks for a speed must be checked against this.
+static func accel_step(speed_mps: float, throttle_in: float, brake_in: float, ctrl: float, delta: float,
+		max_kmh_v: float, accel_v: float, brake_decel_v: float, drag_v := DRAG) -> float:
+	var t := clampf(speed_mps / (max_kmh_v / 3.6), 0.0, 1.0)
+	var a := throttle_in * accel_v * (1.0 - t * t) * ctrl
+	a -= brake_in * brake_decel_v
+	a -= drag_v * speed_mps * speed_mps + 0.15
+	return maxf(0.0, speed_mps + a * delta)
 
 
 ## Steering input smoothing (pure, unit-tested): ~0.2 s to full lock, faster back to centre

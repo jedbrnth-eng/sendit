@@ -257,6 +257,68 @@ func test_goals_pay_once_and_rotate() -> void:
 	runner.check(not still, "completed goal rotated out")
 
 
+# --- Goals every car can reach -----------------------------------------------------------------
+
+const GOAL_DT := 1.0 / 120.0
+const ROLLING_START_KMH := 130.0   # the countdown hands the car over at this cruise (main.gd)
+const CLEAR_ROAD_S := 12.0         # the longest flat-out stretch a speed goal may ask for
+const DISTANCE_MARGIN := 0.9       # a distance goal leaves 10% for traffic, even in a perfect run
+
+
+## Flat out on an empty road from the rolling start: Vector2(km/h reached, metres covered).
+func _flat_out(id: String, seconds: float) -> Vector2:
+	var s := CarCatalog.spec(id)
+	var v := ROLLING_START_KMH / 3.6
+	var d := 0.0
+	for i in int(round(seconds / GOAL_DT)):
+		v = PlayerCar.accel_step(v, 1.0, 0.0, 1.0, GOAL_DT, s.max_kmh, s.accel, s.brake_decel)
+		d += v * GOAL_DT
+	return Vector2(v * 3.6, d)
+
+
+func test_speed_goals_are_reachable_in_every_car() -> void:
+	for id in CarCatalog.ids():
+		var kmh := _flat_out(id, CLEAR_ROAD_S).x
+		for target in Goals.TARGETS["kmh"]:
+			runner.check(kmh >= float(target), "%s reaches the %d km/h goal within %d s of clear road (it does %.1f)" % [
+				id, target, int(CLEAR_ROAD_S), kmh])
+
+
+func test_distance_goals_are_reachable_in_every_car() -> void:
+	var run_s := RunSession.new().duration_s
+	for id in CarCatalog.ids():
+		var km := _flat_out(id, run_s).y / 1000.0
+		for target in Goals.TARGETS["distance"]:
+			runner.check(km * DISTANCE_MARGIN >= float(target), "%s can cover the %d km goal with room for traffic (%.2f km flat out on an empty road)" % [
+				id, target, km])
+
+
+func test_goal_targets_rise_with_tier() -> void:
+	for kind in Goals.KINDS:
+		var table: Array = Goals.TARGETS[kind]
+		runner.check(table.size() == Goals.TIERS, "%s has one target per tier" % kind)
+		for i in range(1, table.size()):
+			runner.check(int(table[i]) >= int(table[i - 1]), "%s tier %d is not easier than tier %d" % [kind, i, i - 1])
+
+
+func test_saved_goal_with_a_retired_target_is_retargeted() -> void:
+	# 0.3.1 could roll "Hit 285 km/h", which no car reaches: that goal sat in its slot for good.
+	var path := "user://test_profile/retired_goal.cfg"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://test_profile"))
+	var cf := ConfigFile.new()
+	cf.set_value("meta", "version", ProfileStore.VERSION)
+	cf.set_value("profile", "xp", XpCurve.total_for(30))
+	cf.set_value("profile", "goals", [{"kind": "kmh", "target": 285}, {"kind": "gaps", "target": 25}])
+	runner.check(cf.save(path) == OK, "wrote the old profile")
+	var p := ProfileStore.load_from(path)
+	var tier := Goals.tier_for(p.level())
+	runner.check(p.goals[0].kind == "kmh" and int(p.goals[0].target) == int(Goals.TARGETS["kmh"][tier]),
+		"an off-table target becomes the current one for the player's tier (got %d)" % int(p.goals[0].target))
+	runner.check(String(p.goals[0].text) == Goals.text("kmh", int(p.goals[0].target)), "and its text follows")
+	runner.check(p.goals[1].kind == "gaps" and int(p.goals[1].target) == 25, "a target still in the table is kept as saved")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
 # --- PlateText ---------------------------------------------------------------------------------
 
 func test_plate_sanitize_and_filter() -> void:

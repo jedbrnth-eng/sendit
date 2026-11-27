@@ -9,13 +9,16 @@ class_name Goals
 
 const KINDS := ["gaps", "kmh", "escape", "score", "combo", "distance", "clean"]
 const TIERS := 5
+## "kmh" and "distance" are bounded by what the cars can do (drag keeps every car well under its
+## max_kmh): tests/test_progression.gd drives each garage car flat out and fails if a target is out
+## of reach, so retune these together with the car specs.
 const TARGETS := {
 	"gaps": [25, 40, 60, 80, 110],
-	"kmh": [220, 240, 255, 270, 285],
+	"kmh": [220, 230, 238, 244, 248],
 	"escape": [1, 2, 3, 3, 4],
 	"score": [8000, 20000, 40000, 70000, 120000],
 	"combo": [3000, 7000, 15000, 28000, 50000],
-	"distance": [4, 6, 8, 10, 12],
+	"distance": [4, 6, 8, 10, 11],
 	"clean": [1, 1, 1, 1, 1],
 }
 
@@ -39,6 +42,16 @@ static func roll(goal_seed: int, n: int, level: int, taken: Array) -> Dictionary
 	var target: int = TARGETS[kind][tier]
 	return {"kind": kind, "target": target, "text": text(kind, target),
 		"xp": 120 + 40 * tier, "credits": 150 + 75 * tier}
+
+
+## The target a saved goal is held to: its own while that is still one of the kind's targets,
+## otherwise the one for the player's tier. A retuned table must not leave a save holding a goal
+## nobody can finish, since a goal only leaves its slot when it is met.
+static func valid_target(kind: String, target: int, level: int) -> int:
+	var table: Array = TARGETS.get(kind, [])
+	if table.is_empty() or table.has(target):
+		return target
+	return int(table[tier_for(level)])
 
 
 static func text(kind: String, target: int) -> String:

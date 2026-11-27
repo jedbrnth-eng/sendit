@@ -95,7 +95,7 @@ static func load_from(path := "") -> Profile:
 			if g is Dictionary and Goals.KINDS.has(g.get("kind", "")) and p.goals.size() < Profile.GOAL_COUNT:
 				# Text and rewards are rebuilt from kind + target, so an edited file can't inflate them.
 				var tier := Goals.tier_for(p.level())
-				var target := _int(g.get("target", 0), 1 << 30)
+				var target := Goals.valid_target(g.kind, _int(g.get("target", 0), 1 << 30), p.level())
 				p.goals.append({"kind": g.kind, "target": target, "text": Goals.text(g.kind, target),
 					"xp": 120 + 40 * tier, "credits": 150 + 75 * tier})
 	p.ensure_goals()
