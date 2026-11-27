@@ -16,6 +16,7 @@ extends Node3D
 ## --run-seconds=<s> overrides the 180 s run length. Autopilot runs never write the best score.
 ## --wreck-at=a,b,c forces a 140 km/h hit at those physics frames (proof shots of the wreck path).
 ## Promo captures: --no-hud hides the HUD and pursuit panel.
+## --no-focus-pause: a run you drive keeps going when the app loses focus (it pauses otherwise).
 ## --menu=settings|pause opens that menu at boot (proof shots of the menus).
 ## Police: --pursuit[=frame], --dist=<m>, --cam=pursuit (see scripts/police/police_manager.gd).
 ## Replay (scripts/replay): --replay-at-end plays the end-of-round replay in proof runs too
@@ -402,7 +403,7 @@ func open_settings() -> SettingsMenu:
 	return m
 
 
-## Pause (Esc / pad Back during a run): the tree stops until RESUME.
+## Pause (Esc / pad Back during a run, or the window losing focus): the tree stops until RESUME.
 func open_pause() -> PauseMenu:
 	var p := PauseMenu.new()
 	_menu = p
@@ -424,6 +425,13 @@ func open_pause() -> PauseMenu:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		quit_game()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		# Switching to another app: pause the player's run instead of letting it wreck out. Coming
+		# back does not resume: the player picks RESUME when ready. The app-level notification, not
+		# the window one, so a fullscreen toggle cannot trip it. --no-focus-pause: filming tools.
+		if is_inside_tree() and not _quitting and not _finished and not Boot.has_arg("no-focus-pause") \
+				and session.pauses_on_focus_loss(_assisted, is_instance_valid(_menu) or get_tree().paused):
+			open_pause()
 
 
 ## QUIT GAME (title settings / pause menu) and the window's close button: unsaved settings are
